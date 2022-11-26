@@ -7,11 +7,12 @@ import Editor from "@monaco-editor/react";
 import { Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
 import { RemoteCursorManager, RemoteSelectionManager, EditorContentManager } from "@convergencelabs/monaco-collab-ext";
+import { debounce } from 'lodash'
 import axios from "axios";
 
 const CURSOR_COLOR = {
   list: ["#FF0000", "#FFC0CB", "#FFA500",
-          "#FFFF00", "#800080", "#008000", "#0000FF", "#A52A2A"],
+    "#FFFF00", "#800080", "#008000", "#0000FF", "#A52A2A"],
   default: "#808080",
 }
 
@@ -27,7 +28,6 @@ function CodeScreen(props) {
   const usersRef = useRef(null);
 
   const { roomId } = useParams();
-  console.log({ roomId });
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
@@ -174,7 +174,7 @@ function CodeScreen(props) {
       showTooltipOnHover: true,
     });
 
-    remoteSelectionManager = new RemoteSelectionManager({editor: editor});
+    remoteSelectionManager = new RemoteSelectionManager({ editor: editor });
 
     contentManager = new EditorContentManager({
       editor: editor,
@@ -191,7 +191,7 @@ function CodeScreen(props) {
         socket?.emit("CODE_DELETE", data);
       }
     });
-    
+
     addInitialCursors();
 
     editor.onDidChangeCursorPosition(e => {
@@ -207,7 +207,7 @@ function CodeScreen(props) {
       const startOffset = editor.getModel().getOffsetAt(e.selection.getStartPosition());
       const endOffset = editor.getModel().getOffsetAt(e.selection.getEndPosition());
       const selectionData = { name: socket.id, startOffset: startOffset, endOffset: endOffset };
-      
+
       socket?.emit("SELECTION_CHANGED", selectionData);
       console.log("SELECTION SENT");
       console.log(selectionData);
@@ -215,109 +215,120 @@ function CodeScreen(props) {
   }
 
   const handleOnchange = (value, e) => {
-    setCode(value);
-    socket?.emit("CODE_CHANGED", value);
-  };
+    const handleOnchange = debounce((value) => {
+      setCode(value);
+      axios.post('http://localhost:3001/data/save', {
+        'roomId': roomId,
+        'code': value,
+      }).then((_) =>
+        console.log('Save code successfully')
+      ).catch((error) => {
+        console.log(`Error when save code\n ${error}`)
+        // TODO: handle error 
+      })
+      socket?.emit("CODE_CHANGED", value);
+    }, 500)
 
-  async function handleRunCompiler() {
-    const res = await axios.post(
-      "http://192.168.90.12:3001/compiler/execute",
-      {
-        "script": code,
-        "language": "dart",
-        "versionIndex": 4
-      }
-    );
-    const output = res.data.output;
-    setOutput(output);
-    socket?.emit("OUTPUT_CHANGED", output);
-  }
+    async function handleRunCompiler() {
+      const res = await axios.post(
+        "http://192.168.90.12:3001/compiler/execute",
+        {
+          "script": code,
+          "language": "dart",
+          "versionIndex": 4
+        }
+      );
+      const output = res.data.output;
+      setOutput(output);
+      socket?.emit("OUTPUT_CHANGED", output);
+    }
 
-  return (
-    <>
-      <Grid container>
-        <Grid item xs={9}>
-          <Editor
-            height="100vh"
-            //value={code}
-            defaultLanguage="javascript"
-            defaultValue={copyRightTemplate + code}
-           // onChange={handleOnchange}
-            onMount={handleOnMount}
-            theme="vs-dark"
-            options={{    
-              cursorBlinking:"blink",
-              cursorStyle:"line",
-              fixedOverflowWidgets:"true"
-            }}
-          />
-        </Grid>
-        <Grid item xs={3}>
-          <Box
-            sx={{
-              background: "#1e1e1e",
-              padding: "24px",
-              height: "100vh",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Box>
-              <h3>
-                Username: <strong>{username}</strong>
-              </h3>
-              <h3>
-                Room Id: <strong>{roomId}</strong>{" "}
-                <span
-                  style={{ display: "inline-block" }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(roomId);
-                  }}
-                  className="icon right"
-                >
-                  <img
-                    src="http://clipground.com/images/copy-4.png"
-                    title="Click to Copy"
-                  />
-                </span>
-              </h3>
-              <h3>
-                Room members: <strong> {users.length}</strong>
-              </h3>
-            </Box>
-
-            <Box sx={{ marginTop: "24px" }}>
-              <Button 
-                variant="outlined" 
-                onClick={handleRunCompiler}>
-                  Run
-              </Button>
-            </Box>
-
+    return (
+      <>
+        <Grid container>
+          <Grid item xs={9}>
+            <Editor
+              height="100vh"
+              //value={code}
+              defaultLanguage="javascript"
+              defaultValue={copyRightTemplate + code}
+              // onChange={handleOnchange}
+              onMount={handleOnMount}
+              theme="vs-dark"
+              options={{
+                cursorBlinking: "blink",
+                cursorStyle: "line",
+                fixedOverflowWidgets: "true"
+              }}
+            />
+          </Grid>
+          <Grid item xs={3}>
             <Box
               sx={{
+                background: "#1e1e1e",
+                padding: "24px",
+                height: "100vh",
                 display: "flex",
                 flexDirection: "column",
-                marginTop: "36px",
               }}
             >
-              <Box sx={{ flex: 1 }}>
-                <h4>Input</h4>
-                <textarea></textarea>
+              <Box>
+                <h3>
+                  Username: <strong>{username}</strong>
+                </h3>
+                <h3>
+                  Room Id: <strong>{roomId}</strong>{" "}
+                  <span
+                    style={{ display: "inline-block" }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(roomId);
+                    }}
+                    className="icon right"
+                  >
+                    <img
+                      src="http://clipground.com/images/copy-4.png"
+                      title="Click to Copy"
+                    />
+                  </span>
+                </h3>
+                <h3>
+                  Room members: <strong> {users.length}</strong>
+                </h3>
               </Box>
 
-              <Box sx={{ flex: 1, marginTop: "36px" }}>
-                <h4>Out put</h4>
-                <Box className="result-banner">
-                  <p>{output === "" ? "This is result banner" : output}</p>
+              <Box sx={{ marginTop: "24px" }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleRunCompiler}>
+                  Run
+                </Button>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  marginTop: "36px",
+                }}
+              >
+                <Box sx={{ flex: 1 }}>
+                  <h4>Input</h4>
+                  <textarea></textarea>
+                </Box>
+
+                <Box sx={{ flex: 1, marginTop: "36px" }}>
+                  <h4>Out put</h4>
+                  <Box className="result-banner">
+                    <p>{output === "" ? "This is result banner" : output}</p>
+                  </Box>
                 </Box>
               </Box>
             </Box>
-          </Box>
+          </Grid>
         </Grid>
-      </Grid>
-    </>
-  );
+      </>
+    );
+  }
 }
 
 export default CodeScreen;
