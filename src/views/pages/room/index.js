@@ -92,15 +92,6 @@ function CodeScreen(props) {
         removeUserCursor(userId);
         usersRef.current = users;
       });
-      //  editor.on('change', (instance, changes) => {
-      //    const { origin } = changes
-      //    if (origin !== 'setValue') {
-      //      socket.emit('CODE_CHANGED', instance.getValue())
-      //    }
-      //  })
-      //  editor.on('cursorActivity', (instance) => {
-      //     console.log(instance.cursorCoords())
-      //  })
 
       return () => {
         socket.emit("DISSCONNECT_FROM_ROOM", { roomId, username });
