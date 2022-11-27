@@ -49,11 +49,13 @@ function SelectRoomDialog({ open, handleClose }) {
             variant="contained"
             disabled={!roomId}
             onClick={ () => {
-              axios.post(
-                "http://localhost:3001/find-room-with-id", {
-                  "roomId": roomId,
-                }
-              )
+              axios({
+                method: 'GET',
+                url: "http://localhost:3001/find-room-with-id",
+                params: {
+                  roomId: roomId
+                },
+              })
               .then((response) => {
                 const roomId = response.data["foundRoomIds"][0];
                 navigate(`room/${roomId}`);
