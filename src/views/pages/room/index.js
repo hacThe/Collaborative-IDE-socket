@@ -6,10 +6,13 @@ import NameInputDialog from "../start/components/name_input_dialog";
 import Editor from "@monaco-editor/react";
 import { Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
+import axios from "axios";
+
 function CodeScreen(props) {
   const { roomId } = useParams();
   console.log({ roomId });
   const [code, setCode] = useState("");
+  const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
   const [socket, setSocket] = useState(
@@ -24,6 +27,10 @@ function CodeScreen(props) {
         setCode(code);
       });
 
+      socket.on("OUTPUT_CHANGED", (output) => {
+        setOutput(output);
+      });
+
       console.log(socket);
       socket.on("connect_error", (err) => {
         console.log(`connect_error due to ${err.message}`);
@@ -31,10 +38,6 @@ function CodeScreen(props) {
 
       socket.on("connect", () => {
         socket.emit("CONNECTED_TO_ROOM", { roomId, username });
-      });
-
-      socket.on("disconnect", () => {
-        socket.emit("DISSCONNECT_FROM_ROOM", { roomId, username });
       });
 
       socket.on("ROOM:CONNECTION", (users) => {
@@ -75,6 +78,21 @@ function CodeScreen(props) {
     setCode(value);
     socket?.emit("CODE_CHANGED", value);
   };
+
+  async function handleRunCompiler() {
+    const res = await axios.post(
+      "http://localhost:3001/compiler/execute",
+      {
+        "script": code,
+        "language": "dart",
+        "versionIndex": 4
+      }
+    );
+    const output = res.data.output;
+    setOutput(output);
+    socket?.emit("OUTPUT_CHANGED", output);
+  }
+
   return (
     <>
       <Grid container>
@@ -123,7 +141,11 @@ function CodeScreen(props) {
             </Box>
 
             <Box sx={{ marginTop: "24px" }}>
-              <Button variant="outlined">Run</Button>
+              <Button 
+                variant="outlined" 
+                onClick={handleRunCompiler}>
+                  Run
+              </Button>
             </Box>
 
             <Box
@@ -141,7 +163,7 @@ function CodeScreen(props) {
               <Box sx={{ flex: 1, marginTop: "36px" }}>
                 <h4>Out put</h4>
                 <Box className="result-banner">
-                  <p>This is result banner</p>
+                  <p>{output === "" ? "This is result banner" : output}</p>
                 </Box>
               </Box>
             </Box>
