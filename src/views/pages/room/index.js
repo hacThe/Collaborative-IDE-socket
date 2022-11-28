@@ -6,7 +6,7 @@ import NameInputDialog from "../start/components/name_input_dialog";
 import Editor from "@monaco-editor/react";
 import { Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
-import { RemoteCursorManager, RemoteSelectionManager } from "@convergencelabs/monaco-collab-ext";
+import { RemoteCursorManager, RemoteSelectionManager, EditorContentManager } from "@convergencelabs/monaco-collab-ext";
 import axios from "axios";
 
 const CURSOR_COLOR = {
@@ -15,13 +15,14 @@ const CURSOR_COLOR = {
   default: "#808080",
 }
 
-const socket = io("ws://localhost:3001", {
+const socket = io("ws://192.168.90.12:3001", {
   transports: ["websocket", "polling"],
 })
 
 function CodeScreen(props) {
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
+  var contentManager = null;
 
   const usersRef = useRef(null);
 
@@ -34,6 +35,19 @@ function CodeScreen(props) {
 
   useEffect(() => {
     if (username) {
+      socket.on("CODE_INSERT", (data) => {
+        console.log("CODE_INSERT");
+        contentManager.insert(data.index, data.text);
+      });
+
+      socket.on("CODE_REPLACE", (data) => {
+        contentManager.replace(data.index, data.length, data.text);
+      });
+
+      socket.on("CODE_DELETE", (data) => {
+        contentManager.delete(data.index, data.length);
+      });
+
       socket.on("CURSOR_CHANGED", (cursorData) => {
         console.log("CURSOR DATA RECEIVED");
         console.log(cursorData);
@@ -161,6 +175,22 @@ function CodeScreen(props) {
     });
 
     remoteSelectionManager = new RemoteSelectionManager({editor: editor});
+
+    contentManager = new EditorContentManager({
+      editor: editor,
+      onInsert(index, text) {
+        const data = { index: index, text: text };
+        socket?.emit("CODE_INSERT", data);
+      },
+      onReplace(index, length, text) {
+        const data = { index: index, length: length, text: text };
+        socket?.emit("CODE_REPLACE", data);
+      },
+      onDelete(index, length) {
+        const data = { index: index, length: length };
+        socket?.emit("CODE_DELETE", data);
+      }
+    });
     
     addInitialCursors();
 
@@ -191,7 +221,7 @@ function CodeScreen(props) {
 
   async function handleRunCompiler() {
     const res = await axios.post(
-      "http://localhost:3001/compiler/execute",
+      "http://192.168.90.12:3001/compiler/execute",
       {
         "script": code,
         "language": "dart",
@@ -209,10 +239,10 @@ function CodeScreen(props) {
         <Grid item xs={9}>
           <Editor
             height="100vh"
-            value={code}
+            //value={code}
             defaultLanguage="javascript"
             defaultValue={copyRightTemplate + code}
-            onChange={handleOnchange}
+           // onChange={handleOnchange}
             onMount={handleOnMount}
             theme="vs-dark"
             options={{    

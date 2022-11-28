@@ -12,7 +12,7 @@ function StartScreen(props) {
   const navigate = useNavigate();
   const handleCreateRoom = async () => {
     const res = await axios.post(
-      `http://localhost:3001/create-room-with-user`,
+      `http://192.168.90.12:3001/create-room-with-user`,
       {}
     );
     navigate(`room/${res.data.roomId}`);
