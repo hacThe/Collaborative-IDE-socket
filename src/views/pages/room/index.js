@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
@@ -6,9 +6,22 @@ import NameInputDialog from "../start/components/name_input_dialog";
 import Editor from "@monaco-editor/react";
 import { Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
+import { RemoteCursorManager, RemoteSelectionManager } from "@convergencelabs/monaco-collab-ext";
 import axios from "axios";
 
+const CURSOR_COLOR = {
+  list: ["#FF0000", "#FFC0CB", "#FFA500",
+          "#FFFF00", "#800080", "#008000", "#0000FF", "#A52A2A"],
+  default: "#808080",
+}
+
 function CodeScreen(props) {
+  var remoteCursorManager = null;
+  var remoteSelectionManager = null;
+
+  const editorRef = useRef(null);
+  const usersRef = useRef(null);
+
   const { roomId } = useParams();
   console.log({ roomId });
   const [code, setCode] = useState("");
@@ -20,8 +33,23 @@ function CodeScreen(props) {
       transports: ["websocket"],
     })
   );
+
   useEffect(() => {
     if (username) {
+      socket.on("CURSOR_CHANGED", (cursorData) => {
+        console.log("CURSOR DATA RECEIVED");
+        console.log(cursorData);
+        console.log("CURSOR DATA SET");
+        remoteCursorManager.setCursorOffset(cursorData.name, cursorData.offset);
+      });
+
+      socket.on("SELECTION_CHANGED", (selectionData) => {
+        console.log("SELECTION DATA RECEIVED");
+        console.log(selectionData);
+        console.log("SELECTION DATA SET");
+        remoteSelectionManager.setSelectionOffsets(selectionData.name, selectionData.startOffset, selectionData.endOffset);
+      });
+
       socket.on("CODE_CHANGED", (code) => {
         console.log(code);
         setCode(code);
@@ -42,7 +70,10 @@ function CodeScreen(props) {
 
       socket.on("ROOM:CONNECTION", (users) => {
         setUsers(users);
-        console.log(users);
+        usersRef.current = usersRef.current === null ? users : users.filter(user => !usersRef.current.includes(user));
+        if (remoteCursorManager && remoteSelectionManager) {
+          addUserCursors();
+        }
       });
 
       //  editor.on('change', (instance, changes) => {
@@ -74,6 +105,52 @@ function CodeScreen(props) {
  
   `;
 
+  function addUserCursors() {
+    const users = usersRef.current;
+    for (let i in users) {
+      const userId = users[i];
+      if (userId !== socket.id) {
+        const cursorColor = i < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[i] : CURSOR_COLOR.default;
+        remoteCursorManager.addCursor(userId, cursorColor, userId);
+        remoteSelectionManager.addSelection(userId, cursorColor, userId);
+      }
+    }
+        
+    console.log("CURSORS & SELECTIONS ADDED");
+  }
+
+  function handleOnMount(editor, monaco) {
+    remoteCursorManager = new RemoteCursorManager({
+      editor: editor,
+      tooltips: true,
+      tooltipDuration: 1,
+      showTooltipOnHover: true,
+    });
+
+    remoteSelectionManager = new RemoteSelectionManager({editor: editor});
+
+    addUserCursors();
+
+    editor.onDidChangeCursorPosition(e => {
+      const offset = editor.getModel().getOffsetAt(e.position);
+      const cursorData = { name: socket.id, offset: offset };
+
+      socket?.emit("CURSOR_CHANGED", cursorData);
+      console.log("CURSOR DATA SENT");
+      console.log(cursorData);
+    });
+
+    editor.onDidChangeCursorSelection(e => {
+      const startOffset = editor.getModel().getOffsetAt(e.selection.getStartPosition());
+      const endOffset = editor.getModel().getOffsetAt(e.selection.getEndPosition());
+      const selectionData = { name: socket.id, startOffset: startOffset, endOffset: endOffset };
+      
+      socket?.emit("SELECTION_CHANGED", selectionData);
+      console.log("SELECTION SENT");
+      console.log(selectionData);
+    });
+  }
+
   const handleOnchange = (value, e) => {
     setCode(value);
     socket?.emit("CODE_CHANGED", value);
@@ -103,7 +180,13 @@ function CodeScreen(props) {
             defaultLanguage="javascript"
             defaultValue={copyRightTemplate + code}
             onChange={handleOnchange}
+            onMount={handleOnMount}
             theme="vs-dark"
+            options={{    
+              cursorBlinking:"blink",
+              cursorStyle:"line",
+              fixedOverflowWidgets:"true"
+            }}
           />
         </Grid>
         <Grid item xs={3}>
