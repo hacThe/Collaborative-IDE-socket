@@ -15,6 +15,10 @@ const CURSOR_COLOR = {
   default: "#808080",
 }
 
+const socket = io("ws://localhost:3001", {
+  transports: ["websocket", "polling"],
+})
+
 function CodeScreen(props) {
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
@@ -27,11 +31,6 @@ function CodeScreen(props) {
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
-  const [socket, setSocket] = useState(
-    io("ws://localhost:3001", {
-      transports: ["websocket"],
-    })
-  );
 
   useEffect(() => {
     if (username) {
@@ -67,14 +66,18 @@ function CodeScreen(props) {
         socket.emit("CONNECTED_TO_ROOM", { roomId, username });
       });
 
-      socket.on("ROOM:CONNECTION", (users) => {
-        setUsers(users);
-        usersRef.current = usersRef.current === null ? users : users.filter(user => !usersRef.current.includes(user));
-        if (remoteCursorManager && remoteSelectionManager) {
-          addUserCursors();
-        }
+      socket.on("ROOM:CONNECTION", (data) => {
+        setUsers(data.users);
+        usersRef.current = data.users;
+        addUserCursor(data.newUserId);
       });
 
+      socket.on("ROOM:DISCONNECT", (userId) => {
+        const users = usersRef.current.filter(item => item.id !== userId);
+        setUsers(users);
+        removeUserCursor(userId);
+        usersRef.current = users;
+      });
       //  editor.on('change', (instance, changes) => {
       //    const { origin } = changes
       //    if (origin !== 'setValue') {
@@ -104,18 +107,49 @@ function CodeScreen(props) {
  
   `;
 
-  function addUserCursors() {
+  function removeUserCursor(oldUserId) {
     const users = usersRef.current;
-    for (let i in users) {
-      const userId = users[i];
-      if (userId !== socket.id) {
-        const cursorColor = i < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[i] : CURSOR_COLOR.default;
-        remoteCursorManager.addCursor(userId, cursorColor, userId);
-        remoteSelectionManager.addSelection(userId, cursorColor, userId);
+    if (remoteCursorManager && remoteSelectionManager) {
+      remoteCursorManager.removeCursor(oldUserId);
+      remoteSelectionManager.removeSelection(oldUserId);
+
+      const oldUserIndex = users.findIndex(item => item.id === oldUserId);
+      const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
+      CURSOR_COLOR.list = CURSOR_COLOR.list.splice(oldUserIndex, 1).push(oldCursorColor);
+      console.log("CURSORS & SELECTIONS REMOVED");
+    }
+  }
+
+  function addUserCursor(newUserId) {
+    const users = usersRef.current;
+    if (remoteCursorManager && remoteSelectionManager) {
+      if (newUserId !== socket.id) {
+        const newUserIndex = users.findIndex(item => item.id == newUserId);
+        console.log("ME MAY:" + newUserId);
+        console.log("ME MAY 1:" + JSON.stringify(users));
+        const newUser = users[newUserIndex];
+        console.log("NGU:" + newUser);
+
+        const cursorColor = newUserIndex < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[newUserIndex] : CURSOR_COLOR.default;
+        remoteCursorManager.addCursor(newUser.id, cursorColor, newUser.username);
+        remoteSelectionManager.addSelection(newUser.id, cursorColor, newUser.username);
+        console.log("CURSORS & SELECTIONS ADDED");
       }
     }
-        
-    console.log("CURSORS & SELECTIONS ADDED");
+  }
+
+  function addInitialCursors() {
+    const users = usersRef.current;
+
+    for (let i in users) {
+      let user = users[i];
+      if (user.id !== socket.id) {
+        const cursorColor = i < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[i] : CURSOR_COLOR.default;
+        remoteCursorManager.addCursor(user.id, cursorColor, user.username);
+        remoteSelectionManager.addSelection(user.id, cursorColor, user.username);
+      }
+    }
+    console.log("INITIAL CURSORS & SELECTIONS ADDED");
   }
 
   function handleOnMount(editor, monaco) {
@@ -127,8 +161,8 @@ function CodeScreen(props) {
     });
 
     remoteSelectionManager = new RemoteSelectionManager({editor: editor});
-
-    addUserCursors();
+    
+    addInitialCursors();
 
     editor.onDidChangeCursorPosition(e => {
       const offset = editor.getModel().getOffsetAt(e.position);
@@ -209,7 +243,7 @@ function CodeScreen(props) {
                   onClick={() => {
                     navigator.clipboard.writeText(roomId);
                   }}
-                  class="icon right"
+                  className="icon right"
                 >
                   <img
                     src="http://clipground.com/images/copy-4.png"
