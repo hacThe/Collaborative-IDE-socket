@@ -19,7 +19,6 @@ function CodeScreen(props) {
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
 
-  const editorRef = useRef(null);
   const usersRef = useRef(null);
 
   const { roomId } = useParams();
