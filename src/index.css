@@ -65,3 +65,15 @@ input {
   padding: 12px;
   font-family: monospace;
 }
+
+.active-result-banner {
+  height: 100%;
+  border: 1px solid #333;
+  color: white;
+  padding: 12px;
+  font-family: monospace;
+}
+
+.compiler-language-version{
+  color: white;
+}

@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Button, Grid } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
 import { RemoteCursorManager, RemoteSelectionManager, EditorContentManager } from "@convergencelabs/monaco-collab-ext";
 import { debounce } from 'lodash'
@@ -31,7 +31,30 @@ function CodeScreen(props) {
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
 
+  const [compilerLanguages, setCompilerLanguages] = useState([]);
+  const [languageList, setLanguageList] = useState([]);
+  const [versionList, setVersionList] = useState([]);
+  const [selectedLanguageIndex, setSelectedLanguageIndex] = useState(0);
+  const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
+
+  const [editorLanguage, setEditorLanguage] = useState(null);
+
   useEffect(() => {
+
+    axios.get(
+      `http://localhost:3001/compiler/get-programming-languages`,
+    ).then((response) => {
+      const compilerLanguages = response.data.result;
+      setCompilerLanguages(compilerLanguages);
+      setLanguageList(compilerLanguages.map((item) => item.name));
+      setVersionList(compilerLanguages[selectedLanguageIndex].versions);
+
+      changeEditorLanguage(compilerLanguages[selectedLanguageIndex].name);
+    }).catch((error) => {
+      console.log(`Error when get compiler languages\n ${error}`)
+      // TODO: handle error 
+    });
+
     socket.on("CODE_INSERT", (data) => {
       console.log("CODE_INSERT");
       contentManager.insert(data.index, data.text);
@@ -232,13 +255,38 @@ function CodeScreen(props) {
       "http://localhost:3001/compiler/execute",
       {
         "script": code,
-        "language": "dart",
-        "versionIndex": 4
+        "language": compilerLanguages[selectedLanguageIndex].name,
+        "version": compilerLanguages[selectedLanguageIndex].versions[selectedVersionIndex]
       }
     );
     const output = res.data.output;
     setOutput(output);
     socket?.emit("OUTPUT_CHANGED", output);
+  }
+
+  function changeEditorLanguage(name) {
+    switch (name) {
+      case "NodeJS":
+        setEditorLanguage("javascript");
+        break;
+      default:
+        setEditorLanguage(null);
+        break;
+    }
+  }
+
+  function handleOnLanguageChange(event, value) {
+    const index = compilerLanguages.findIndex(item => item.name == value);
+    setSelectedLanguageIndex(index);
+    if (index != selectedLanguageIndex) {
+      setSelectedVersionIndex(0);
+      setVersionList(index != -1 ? compilerLanguages[index].versions : []);
+    }
+    changeEditorLanguage(value);
+  }
+  
+  function handleOnLanguageVersionChange(event, value) {
+    setSelectedVersionIndex(versionList.indexOf(value));
   }
 
   return (
@@ -248,7 +296,8 @@ function CodeScreen(props) {
           <Editor
             height="100vh"
             value={code}
-            defaultLanguage="javascript"
+            defaultLanguage="undefined"
+            language={editorLanguage}
             defaultValue={copyRightTemplate + code}
             onChange={handleOnchange}
             onMount={handleOnMount}
@@ -265,9 +314,10 @@ function CodeScreen(props) {
             sx={{
               background: "#1e1e1e",
               padding: "24px",
-              height: "100vh",
+              minHeight: "100vh",
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "column", 
+              overflow: 'auto'
             }}
           >
             <Box>
@@ -295,29 +345,62 @@ function CodeScreen(props) {
               </h3>
             </Box>
 
+            <Autocomplete
+              disableClearable
+              id="compiler-language"
+              options={languageList}
+              sx={{ marginTop: "12px" }}
+              onChange={handleOnLanguageChange}
+              value={languageList[selectedLanguageIndex] ?? ""} 
+              label="Ngu"
+              renderInput={
+                (params) => <TextField {...params} label="Languages"/>
+              }
+            />
+            
+            <Autocomplete
+              disableClearable
+              id="compiler-language-version"
+              options={versionList}
+              sx={{ marginTop: "12px" }}
+              onChange={handleOnLanguageVersionChange}
+              value={versionList[selectedVersionIndex] ?? ""}
+              renderInput={(params) => <TextField {...params} label="Language versions"/>}
+            />
+
+            {/* <Box sx={{ marginTop: "12px" }}>
+              <Button
+                variant="contained"
+                fullWidth={true}
+                size="small"
+                onClick={handleRunCompiler}>
+                Save compiler language
+              </Button>
+            </Box> */}
             <Box sx={{ marginTop: "24px" }}>
               <Button
-                variant="outlined"
+                variant="contained"
+                color="primary"
+                fullWidth={true}
                 onClick={handleRunCompiler}>
                 Run
               </Button>
             </Box>
-
             <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
-                marginTop: "36px",
+                marginTop: "24px",
               }}
             >
-              <Box sx={{ flex: 1 }}>
+              {/* <Box sx={{ flex: 1 }}>
                 <h4>Input</h4>
                 <textarea></textarea>
-              </Box>
+              </Box> */}
 
-              <Box sx={{ flex: 1, marginTop: "36px" }}>
-                <h4>Out put</h4>
-                <Box className="result-banner">
+              <Box sx={{ flex: 1 }}>
+                <h4>Output</h4>
+                <Box className={output === "" ? "result-banner" : "active-result-banner" } sx = {{ overflow: 'auto', height: "32vh" }}>
                   <p>{output === "" ? "This is result banner" : output}</p>
                 </Box>
               </Box>
