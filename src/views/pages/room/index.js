@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
-import NameInputDialog from "../start/components/name_input_dialog";
 import Editor from "@monaco-editor/react";
 import { Button, Grid } from "@mui/material";
 import { Box } from "@mui/system";
@@ -16,8 +15,8 @@ const CURSOR_COLOR = {
   default: "#808080",
 }
 
-const socket = io("ws://192.168.90.12:3001", {
-  transports: ["websocket", "polling"],
+const socket = io("ws://localhost:3001", {
+  transports: ["websocket"],
 })
 
 function CodeScreen(props) {
@@ -26,7 +25,6 @@ function CodeScreen(props) {
   var contentManager = null;
 
   const usersRef = useRef(null);
-
   const { roomId } = useParams();
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -34,70 +32,108 @@ function CodeScreen(props) {
   const username = useSelector((state) => state.app).username;
 
   useEffect(() => {
-    if (username) {
-      socket.on("CODE_INSERT", (data) => {
-        console.log("CODE_INSERT");
-        contentManager.insert(data.index, data.text);
-      });
+    socket.on("CODE_INSERT", (data) => {
+      console.log("CODE_INSERT");
+      contentManager.insert(data.index, data.text);
+    });
 
-      socket.on("CODE_REPLACE", (data) => {
-        contentManager.replace(data.index, data.length, data.text);
-      });
+    socket.on("CODE_REPLACE", (data) => {
+      contentManager.replace(data.index, data.length, data.text);
+    });
 
-      socket.on("CODE_DELETE", (data) => {
-        contentManager.delete(data.index, data.length);
-      });
+    socket.on("CODE_DELETE", (data) => {
+      contentManager.delete(data.index, data.length);
+    });
 
-      socket.on("CURSOR_CHANGED", (cursorData) => {
-        console.log("CURSOR DATA RECEIVED");
-        console.log(cursorData);
-        console.log("CURSOR DATA SET");
-        remoteCursorManager.setCursorOffset(cursorData.name, cursorData.offset);
-      });
+    socket.on("CURSOR_CHANGED", (cursorData) => {
+      console.log("CURSOR DATA RECEIVED");
+      console.log(cursorData);
+      console.log("CURSOR DATA SET");
+      remoteCursorManager.setCursorOffset(cursorData.name, cursorData.offset);
+    });
 
-      socket.on("SELECTION_CHANGED", (selectionData) => {
-        console.log("SELECTION DATA RECEIVED");
-        console.log(selectionData);
-        console.log("SELECTION DATA SET");
-        remoteSelectionManager.setSelectionOffsets(selectionData.name, selectionData.startOffset, selectionData.endOffset);
-      });
+    socket.on("SELECTION_CHANGED", (selectionData) => {
+      console.log("SELECTION DATA RECEIVED");
+      console.log(selectionData);
+      console.log("SELECTION DATA SET");
+      remoteSelectionManager.setSelectionOffsets(selectionData.name, selectionData.startOffset, selectionData.endOffset);
+    });
 
-      socket.on("CODE_CHANGED", (code) => {
-        console.log(code);
-        setCode(code);
-      });
+    socket.on("CODE_CHANGED", (code) => {
+      setCode(code);
+    });
 
-      socket.on("OUTPUT_CHANGED", (output) => {
-        setOutput(output);
-      });
+    socket.on("OUTPUT_CHANGED", (output) => {
+      setOutput(output);
+    });
 
-      console.log(socket);
-      socket.on("connect_error", (err) => {
-        console.log(`connect_error due to ${err.message}`);
-      });
+    socket.on("connect_error", (err) => {
+      console.log(`connect_error due to ${err.message}`);
+    });
 
-      socket.on("connect", () => {
-        socket.emit("CONNECTED_TO_ROOM", { roomId, username });
-      });
+    socket.on("connect", () => {
+      socket.emit("CONNECTED_TO_ROOM", { roomId, username });
+    });
 
-      socket.on("ROOM:CONNECTION", (data) => {
-        setUsers(data.users);
-        usersRef.current = data.users;
-        addUserCursor(data.newUserId);
-      });
+    socket.on("ROOM:CONNECTION", (data) => {
+      setUsers(data.users);
+      usersRef.current = data.users;
+      addUserCursor(data.newUserId);
+    });
 
-      socket.on("ROOM:DISCONNECT", (userId) => {
-        const users = usersRef.current.filter(item => item.id !== userId);
-        setUsers(users);
-        removeUserCursor(userId);
-        usersRef.current = users;
-      });
+    socket.on("ROOM:DISCONNECT", (userId) => {
+      const users = usersRef.current.filter(item => item.id !== userId);
+      setUsers(users);
+      removeUserCursor(userId);
+      usersRef.current = users;
+    });
 
-      return () => {
-        socket.emit("DISSCONNECT_FROM_ROOM", { roomId, username });
-      };
+    function removeUserCursor(oldUserId) {
+      const users = usersRef.current;
+      if (remoteCursorManager && remoteSelectionManager) {
+        remoteCursorManager.removeCursor(oldUserId);
+        remoteSelectionManager.removeSelection(oldUserId);
+
+        const oldUserIndex = users.findIndex(item => item.id === oldUserId);
+        const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
+        CURSOR_COLOR.list = CURSOR_COLOR.list.splice(oldUserIndex, 1).push(oldCursorColor);
+        console.log("CURSORS & SELECTIONS REMOVED");
+      }
     }
-  }, []);
+
+    function addUserCursor(newUserId) {
+      const users = usersRef.current;
+      if (remoteCursorManager && remoteSelectionManager) {
+        if (newUserId !== socket.id) {
+          const newUserIndex = users.findIndex(item => item.id === newUserId);
+          console.log("ME MAY:" + newUserId);
+          console.log("ME MAY 1:" + JSON.stringify(users));
+          const newUser = users[newUserIndex];
+          console.log("NGU:" + newUser);
+
+          const cursorColor = newUserIndex < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[newUserIndex] : CURSOR_COLOR.default;
+          remoteCursorManager.addCursor(newUser.id, cursorColor, newUser.username);
+          remoteSelectionManager.addSelection(newUser.id, cursorColor, newUser.username);
+          console.log("CURSORS & SELECTIONS ADDED");
+        }
+      }
+    }
+
+    return () => {
+      socket.off('CODE_INSERT')
+      socket.off('CODE_REPLACE')
+      socket.off('CODE_DELETE')
+      socket.off('CURSOR_CHANGED')
+      socket.off('SELECTION_CHANGED')
+      socket.off('CODE_CHANGED')
+      socket.off('OUTPUT_CHANGED')
+      socket.off('connect_error')
+      socket.off('connect')
+      socket.off('ROOM:CONNECTION')
+      socket.off('ROOM:DISCONNECT')
+    };
+
+  }, [contentManager, remoteCursorManager, remoteSelectionManager, roomId, username]);
 
   if (!username) return <Navigate to="/" replace />;
 
@@ -111,37 +147,6 @@ function CodeScreen(props) {
  
  
   `;
-
-  function removeUserCursor(oldUserId) {
-    const users = usersRef.current;
-    if (remoteCursorManager && remoteSelectionManager) {
-      remoteCursorManager.removeCursor(oldUserId);
-      remoteSelectionManager.removeSelection(oldUserId);
-
-      const oldUserIndex = users.findIndex(item => item.id === oldUserId);
-      const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
-      CURSOR_COLOR.list = CURSOR_COLOR.list.splice(oldUserIndex, 1).push(oldCursorColor);
-      console.log("CURSORS & SELECTIONS REMOVED");
-    }
-  }
-
-  function addUserCursor(newUserId) {
-    const users = usersRef.current;
-    if (remoteCursorManager && remoteSelectionManager) {
-      if (newUserId !== socket.id) {
-        const newUserIndex = users.findIndex(item => item.id == newUserId);
-        console.log("ME MAY:" + newUserId);
-        console.log("ME MAY 1:" + JSON.stringify(users));
-        const newUser = users[newUserIndex];
-        console.log("NGU:" + newUser);
-
-        const cursorColor = newUserIndex < CURSOR_COLOR.list.length ? CURSOR_COLOR.list[newUserIndex] : CURSOR_COLOR.default;
-        remoteCursorManager.addCursor(newUser.id, cursorColor, newUser.username);
-        remoteSelectionManager.addSelection(newUser.id, cursorColor, newUser.username);
-        console.log("CURSORS & SELECTIONS ADDED");
-      }
-    }
-  }
 
   function addInitialCursors() {
     const users = usersRef.current;
@@ -205,121 +210,123 @@ function CodeScreen(props) {
     });
   }
 
-  const handleOnchange = (value, e) => {
-    const handleOnchange = debounce((value) => {
-      setCode(value);
-      axios.post('http://localhost:3001/data/save', {
-        'roomId': roomId,
-        'code': value,
-      }).then((_) =>
-        console.log('Save code successfully')
-      ).catch((error) => {
-        console.log(`Error when save code\n ${error}`)
-        // TODO: handle error 
-      })
-      socket?.emit("CODE_CHANGED", value);
-    }, 500)
-
-    async function handleRunCompiler() {
-      const res = await axios.post(
-        "http://192.168.90.12:3001/compiler/execute",
-        {
-          "script": code,
-          "language": "dart",
-          "versionIndex": 4
-        }
-      );
-      const output = res.data.output;
-      setOutput(output);
-      socket?.emit("OUTPUT_CHANGED", output);
+  const handleOnchange = debounce((value) => {
+    if (code === value) {
+      return
     }
 
-    return (
-      <>
-        <Grid container>
-          <Grid item xs={9}>
-            <Editor
-              height="100vh"
-              //value={code}
-              defaultLanguage="javascript"
-              defaultValue={copyRightTemplate + code}
-              // onChange={handleOnchange}
-              onMount={handleOnMount}
-              theme="vs-dark"
-              options={{
-                cursorBlinking: "blink",
-                cursorStyle: "line",
-                fixedOverflowWidgets: "true"
-              }}
-            />
-          </Grid>
-          <Grid item xs={3}>
+    setCode(value)
+    axios.post('http://localhost:3001/data/save', {
+      'roomId': roomId,
+      'code': value,
+    }).then((_) =>
+      console.log('Save code successfully')
+    ).catch((error) => {
+      console.log(`Error when save code\n ${error}`)
+      // TODO: handle error 
+    })
+  }, 500)
+
+  async function handleRunCompiler() {
+    const res = await axios.post(
+      "http://localhost:3001/compiler/execute",
+      {
+        "script": code,
+        "language": "dart",
+        "versionIndex": 4
+      }
+    );
+    const output = res.data.output;
+    setOutput(output);
+    socket?.emit("OUTPUT_CHANGED", output);
+  }
+
+  return (
+    <>
+      <Grid container>
+        <Grid item xs={9}>
+          <Editor
+            height="100vh"
+            value={code}
+            defaultLanguage="javascript"
+            defaultValue={copyRightTemplate + code}
+            onChange={handleOnchange}
+            onMount={handleOnMount}
+            theme="vs-dark"
+            options={{
+              cursorBlinking: "blink",
+              cursorStyle: "line",
+              fixedOverflowWidgets: "true"
+            }}
+          />
+        </Grid>
+        <Grid item xs={3}>
+          <Box
+            sx={{
+              background: "#1e1e1e",
+              padding: "24px",
+              height: "100vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Box>
+              <h3>
+                Username: <strong>{username}</strong>
+              </h3>
+              <h3>
+                Room Id: <strong>{roomId}</strong>{" "}
+                <span
+                  style={{ display: "inline-block" }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(roomId);
+                  }}
+                  className="icon right"
+                >
+                  <img
+                    src="http://clipground.com/images/copy-4.png"
+                    title="Click to Copy"
+                    alt="Copy room id"
+                  />
+                </span>
+              </h3>
+              <h3>
+                Room members: <strong> {users.length}</strong>
+              </h3>
+            </Box>
+
+            <Box sx={{ marginTop: "24px" }}>
+              <Button
+                variant="outlined"
+                onClick={handleRunCompiler}>
+                Run
+              </Button>
+            </Box>
+
             <Box
               sx={{
-                background: "#1e1e1e",
-                padding: "24px",
-                height: "100vh",
                 display: "flex",
                 flexDirection: "column",
+                marginTop: "36px",
               }}
             >
-              <Box>
-                <h3>
-                  Username: <strong>{username}</strong>
-                </h3>
-                <h3>
-                  Room Id: <strong>{roomId}</strong>{" "}
-                  <span
-                    style={{ display: "inline-block" }}
-                    onClick={() => {
-                      navigator.clipboard.writeText(roomId);
-                    }}
-                    className="icon right"
-                  >
-                    <img
-                      src="http://clipground.com/images/copy-4.png"
-                      title="Click to Copy"
-                    />
-                  </span>
-                </h3>
-                <h3>
-                  Room members: <strong> {users.length}</strong>
-                </h3>
+              <Box sx={{ flex: 1 }}>
+                <h4>Input</h4>
+                <textarea></textarea>
               </Box>
 
-              <Box sx={{ marginTop: "24px" }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleRunCompiler}>
-                  Run
-                </Button>
-              </Box>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  marginTop: "36px",
-                }}
-              >
-                <Box sx={{ flex: 1 }}>
-                  <h4>Input</h4>
-                  <textarea></textarea>
-                </Box>
-
-                <Box sx={{ flex: 1, marginTop: "36px" }}>
-                  <h4>Out put</h4>
-                  <Box className="result-banner">
-                    <p>{output === "" ? "This is result banner" : output}</p>
-                  </Box>
+              <Box sx={{ flex: 1, marginTop: "36px" }}>
+                <h4>Out put</h4>
+                <Box className="result-banner">
+                  <p>{output === "" ? "This is result banner" : output}</p>
                 </Box>
               </Box>
             </Box>
-          </Grid>
+          </Box>
         </Grid>
-      </>
-    );
-  }
+      </Grid>
+    </>
+  );
 }
 
 export default CodeScreen;

@@ -48,21 +48,21 @@ function SelectRoomDialog({ open, handleClose }) {
             sx={{ color: "white", fontFamily: "Roboto Mono" }}
             variant="contained"
             disabled={!roomId}
-            onClick={ () => {
+            onClick={() => {
               axios({
                 method: 'GET',
-                url: "http://192.168.90.12:3001/find-room-with-id",
+                url: "http://localhost:3001/find-room-with-id",
                 params: {
                   roomId: roomId
                 },
               })
-              .then((response) => {
-                const roomId = response.data["foundRoomIds"];
-                console.log(response);
-                navigate(`room/${roomId}`);
-              }).catch((error) => {
-                setError(error.response.data);
-              });
+                .then((response) => {
+                  const roomId = response.data["foundRoomIds"];
+                  console.log(response);
+                  navigate(`room/${roomId}`);
+                }).catch((error) => {
+                  setError(error.response.data);
+                });
             }}
           >
             Go
