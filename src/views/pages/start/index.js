@@ -36,7 +36,7 @@ function StartScreen(props) {
           alignItems: "center",
         }}
       >
-        <h2 style={{ display: "inline-block" }}>Chào {appState?.username}</h2>
+        <h2 style={{ display: "inline-block" }}>Hello <strong> {appState?.username} </strong></h2>
         <Box
           sx={{
             display: "flex",
@@ -54,7 +54,7 @@ function StartScreen(props) {
             variant="contained"
             onClick={handleCreateRoom}
           >
-            Tạo phòng
+            Create room
           </Button>
           <Button
             sx={{
@@ -65,7 +65,7 @@ function StartScreen(props) {
             variant="outlined"
             onClick={() => setOpen(true)}
           >
-            Tham gia phòng
+            Join room
           </Button>
           <NameInputDialog open={!appState.username} />
           <SelectRoomDialog open={open} handleClose={() => setOpen(false)} />

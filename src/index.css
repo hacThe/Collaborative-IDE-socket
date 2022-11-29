@@ -74,6 +74,24 @@ input {
   font-family: monospace;
 }
 
-.compiler-language-version{
+.compiler-language-version {
   color: white;
+}
+
+#compiler-language-version-label,
+#compiler-language-label {
+  color: #ccc;
+}
+
+.MuiAutocomplete-input {
+  color: rgb(247, 235, 3) !important;
+}
+
+svg {
+  fill: #ccc !important;
+}
+
+
+.MuiOutlinedInput-notchedOutline{
+  border-color: #ccc !important;
 }
