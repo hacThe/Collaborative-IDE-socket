@@ -400,8 +400,8 @@ function CodeScreen(props) {
               sx={{
                 marginTop: "12px",
                 ".MuiOutlinedInput-root": {
-                    borderColor: "white",
-                    borderWidth: 10,
+                  borderColor: "white",
+                  borderWidth: 10,
                 },
               }}
               onChange={handleOnLanguageChange}
