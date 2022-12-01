@@ -135,10 +135,7 @@ function CodeScreen(props) {
       if (remoteCursorManager && remoteSelectionManager) {
         if (newUserId !== socket.current.id) {
           const newUserIndex = users.findIndex((item) => item.id === newUserId);
-          console.log("ME MAY:" + newUserId);
-          console.log("ME MAY 1:" + JSON.stringify(users));
           const newUser = users[newUserIndex];
-          console.log("NGU:" + newUser);
 
           const cursorColor =
             newUserIndex < CURSOR_COLOR.list.length
@@ -165,9 +162,9 @@ function CodeScreen(props) {
         const compilerLanguages = response.data.result;
         setCompilerLanguages(compilerLanguages);
         setLanguageList(compilerLanguages.map((item) => item.name));
-        setVersionList(compilerLanguages[selectedLanguageIndex].versions);
+        setVersionList(compilerLanguages[0].versions);
 
-        changeEditorLanguage(compilerLanguages[selectedLanguageIndex].name);
+        changeEditorLanguage(compilerLanguages[0].name);
       })
       .catch((error) => {
         console.log(`Error when get compiler languages\n ${error}`);
@@ -193,8 +190,7 @@ function CodeScreen(props) {
     remoteCursorManager,
     remoteSelectionManager,
     roomId,
-    username,
-    selectedLanguageIndex
+    username
   ]);
 
   if (!username) return <Navigate to="/" replace />;
