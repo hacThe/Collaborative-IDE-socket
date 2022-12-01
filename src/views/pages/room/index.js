@@ -42,21 +42,37 @@ function CodeScreen(props) {
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
 
-  const [compilerLanguages, setCompilerLanguages] = useState([]);
+  const compilerLanguages = useRef([])
   const [languageList, setLanguageList] = useState([]);
-  const [versionList, setVersionList] = useState([]);
+  const versionList = useRef([])
   const [selectedLanguageIndex, setSelectedLanguageIndex] = useState(0);
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
 
   const [editorLanguage, setEditorLanguage] = useState(null);
 
   useEffect(() => {
+    axios
+      .get(`http://localhost:3001/compiler/get-programming-languages`)
+      .then((response) => {
+        const fetchCompilerLanguages = response.data.result;
+        compilerLanguages.current = fetchCompilerLanguages
+        setLanguageList(fetchCompilerLanguages.map((item) => item.name));
+        versionList.current = fetchCompilerLanguages[selectedLanguageIndex].versions
+
+        changeEditorLanguage(fetchCompilerLanguages[selectedLanguageIndex].name);
+      })
+      .catch((error) => {
+        console.log(`Error when get compiler languages\n ${error}`);
+        // TODO: handle error
+      });
+  }, [])
+
+  useEffect(() => {
     socket.current = io("http://localhost:3001", {
-      transports: ["polling", "websocket"],
+      transports: ["websocket"],
     });
 
     socket.current.on("CODE_INSERT", (data) => {
-      console.log("CODE_INSERT");
       contentManager.insert(data.index, data.text);
     });
 
@@ -69,16 +85,10 @@ function CodeScreen(props) {
     });
 
     socket.current.on("CURSOR_CHANGED", (cursorData) => {
-      console.log("CURSOR DATA RECEIVED");
-      console.log(cursorData);
-      console.log("CURSOR DATA SET");
       remoteCursorManager.setCursorOffset(cursorData.name, cursorData.offset);
     });
 
     socket.current.on("SELECTION_CHANGED", (selectionData) => {
-      console.log("SELECTION DATA RECEIVED");
-      console.log(selectionData);
-      console.log("SELECTION DATA SET");
       remoteSelectionManager.setSelectionOffsets(
         selectionData.name,
         selectionData.startOffset,
@@ -115,6 +125,21 @@ function CodeScreen(props) {
       usersRef.current = users;
     });
 
+    socket.current.on('CHANGE_LANGUAGE', (newLanguage) => {
+      const index = compilerLanguages.current.findIndex((item) => item.name === newLanguage);
+      setSelectedLanguageIndex(index);
+      if (index !== selectedLanguageIndex) {
+        setSelectedVersionIndex(0);
+        versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
+      }
+      changeEditorLanguage(newLanguage);
+    })
+
+    socket.current.on('CHANGE_VERSION', (newVersionIndex) => {
+      setSelectedVersionIndex(newVersionIndex);
+    })
+
+
     function removeUserCursor(oldUserId) {
       const users = usersRef.current;
       if (remoteCursorManager && remoteSelectionManager) {
@@ -126,7 +151,6 @@ function CodeScreen(props) {
         CURSOR_COLOR.list = CURSOR_COLOR.list
           .splice(oldUserIndex, 1)
           .push(oldCursorColor);
-        console.log("CURSORS & SELECTIONS REMOVED");
       }
     }
 
@@ -135,10 +159,7 @@ function CodeScreen(props) {
       if (remoteCursorManager && remoteSelectionManager) {
         if (newUserId !== socket.current.id) {
           const newUserIndex = users.findIndex((item) => item.id === newUserId);
-          console.log("ME MAY:" + newUserId);
-          console.log("ME MAY 1:" + JSON.stringify(users));
           const newUser = users[newUserIndex];
-          console.log("NGU:" + newUser);
 
           const cursorColor =
             newUserIndex < CURSOR_COLOR.list.length
@@ -154,26 +175,9 @@ function CodeScreen(props) {
             cursorColor,
             newUser.username
           );
-          console.log("CURSORS & SELECTIONS ADDED");
         }
       }
     }
-
-    axios
-      .get(`http://localhost:3001/compiler/get-programming-languages`)
-      .then((response) => {
-        const compilerLanguages = response.data.result;
-        setCompilerLanguages(compilerLanguages);
-        setLanguageList(compilerLanguages.map((item) => item.name));
-        setVersionList(compilerLanguages[selectedLanguageIndex].versions);
-
-        changeEditorLanguage(compilerLanguages[selectedLanguageIndex].name);
-      })
-      .catch((error) => {
-        console.log(`Error when get compiler languages\n ${error}`);
-        // TODO: handle error
-      });
-
 
     return () => {
       socket.current.off("CODE_INSERT");
@@ -187,15 +191,11 @@ function CodeScreen(props) {
       socket.current.off("connect");
       socket.current.off("ROOM:CONNECTION");
       socket.current.off("ROOM:DISCONNECT");
+      socket.current.off('CHANGE_LANGUAGE')
     };
-  }, [
-    contentManager,
-    remoteCursorManager,
-    remoteSelectionManager,
-    roomId,
-    username,
-    selectedLanguageIndex
-  ]);
+  }, []);
+
+
 
   if (!username) return <Navigate to="/" replace />;
 
@@ -228,7 +228,6 @@ function CodeScreen(props) {
         );
       }
     }
-    console.log("INITIAL CURSORS & SELECTIONS ADDED");
   }
 
   function handleOnMount(editor, monaco) {
@@ -245,15 +244,15 @@ function CodeScreen(props) {
       editor: editor,
       onInsert(index, text) {
         const data = { index: index, text: text };
-        socket.current?.emit("CODE_INSERT", data);
+        socket.current?.emit("CODE_INSERT", { roomId, data });
       },
       onReplace(index, length, text) {
         const data = { index: index, length: length, text: text };
-        socket.current?.emit("CODE_REPLACE", data);
+        socket.current?.emit("CODE_REPLACE", { roomId, data });
       },
       onDelete(index, length) {
         const data = { index: index, length: length };
-        socket.current?.emit("CODE_DELETE", data);
+        socket.current?.emit("CODE_DELETE", { roomId, data });
       },
     });
 
@@ -263,9 +262,7 @@ function CodeScreen(props) {
       const offset = editor.getModel().getOffsetAt(e.position);
       const cursorData = { name: socket.current.id, offset: offset };
 
-      socket.current?.emit("CURSOR_CHANGED", cursorData);
-      console.log("CURSOR DATA SENT");
-      console.log(cursorData);
+      socket.current?.emit("CURSOR_CHANGED", { roomId, cursorData });
     });
 
     editor.onDidChangeCursorSelection((e) => {
@@ -281,9 +278,7 @@ function CodeScreen(props) {
         endOffset: endOffset,
       };
 
-      socket.current?.emit("SELECTION_CHANGED", selectionData);
-      console.log("SELECTION SENT");
-      console.log(selectionData);
+      socket.current?.emit("SELECTION_CHANGED", { roomId, selectionData });
     });
   }
 
@@ -308,13 +303,13 @@ function CodeScreen(props) {
   async function handleRunCompiler() {
     const res = await axios.post("http://localhost:3001/compiler/execute", {
       script: code,
-      language: compilerLanguages[selectedLanguageIndex].name,
+      language: compilerLanguages.current[selectedLanguageIndex].name,
       version:
-        compilerLanguages[selectedLanguageIndex].versions[selectedVersionIndex],
+        compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
     });
     const output = res.data.output;
     setOutput(output);
-    socket.current?.emit("OUTPUT_CHANGED", output);
+    socket.current?.emit("OUTPUT_CHANGED", { roomId, output });
   }
 
   function changeEditorLanguage(name) {
@@ -329,17 +324,28 @@ function CodeScreen(props) {
   }
 
   function handleOnLanguageChange(event, value) {
-    const index = compilerLanguages.findIndex((item) => item.name === value);
+    console.log('onChangeLanguage function')
+    const index = compilerLanguages.current.findIndex((item) => item.name === value);
     setSelectedLanguageIndex(index);
     if (index !== selectedLanguageIndex) {
       setSelectedVersionIndex(0);
-      setVersionList(index !== -1 ? compilerLanguages[index].versions : []);
+      versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
     }
     changeEditorLanguage(value);
+
+    socket.current?.emit('CHANGE_LANGUAGE', {
+      'roomId': roomId,
+      'newLanguage': value
+    })
   }
 
   function handleOnLanguageVersionChange(event, value) {
-    setSelectedVersionIndex(versionList.indexOf(value));
+    const newIndex = versionList.current.indexOf(value)
+    setSelectedVersionIndex(newIndex);
+    socket.current?.emit('CHANGE_VERSION', {
+      'roomId': roomId,
+      'newVersionIndex': newIndex
+    })
   }
 
   return (
@@ -420,10 +426,10 @@ function CodeScreen(props) {
             <Autocomplete
               disableClearable
               id="compiler-language-version"
-              options={versionList}
+              options={versionList.current}
               sx={{ marginTop: "12px" }}
               onChange={handleOnLanguageVersionChange}
-              value={versionList[selectedVersionIndex] ?? ""}
+              value={versionList.current[selectedVersionIndex] ?? ""}
               renderInput={(params) => (
                 <TextField {...params} label="Language versions" />
               )}
