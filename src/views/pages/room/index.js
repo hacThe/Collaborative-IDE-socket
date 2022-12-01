@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -12,6 +12,7 @@ import {
 } from "@convergencelabs/monaco-collab-ext";
 import { debounce } from "lodash";
 import axios from "axios";
+import { usePromiseTracker, trackPromise } from "react-promise-tracker";
 
 const CURSOR_COLOR = {
   list: [
@@ -49,6 +50,8 @@ function CodeScreen(props) {
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
 
   const [editorLanguage, setEditorLanguage] = useState(null);
+
+  const { promiseInProgress } = usePromiseTracker();
 
   useEffect(() => {
     axios
@@ -299,15 +302,18 @@ function CodeScreen(props) {
   }, 500);
 
   async function handleRunCompiler() {
-    const res = await axios.post("http://localhost:3001/compiler/execute", {
-      script: code,
-      language: compilerLanguages.current[selectedLanguageIndex].name,
-      version:
-        compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
-    });
-    const output = res.data.output;
-    setOutput(output);
-    socket.current?.emit("OUTPUT_CHANGED", { roomId, output });
+    trackPromise(
+      axios.post("http://localhost:3001/compiler/execute", {
+        script: code,
+        language: compilerLanguages.current[selectedLanguageIndex].name,
+        version:
+          compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
+      }).then((res) => {
+        const output = res.data.output;
+        setOutput(output);
+        socket.current?.emit("OUTPUT_CHANGED", { roomId, output });   
+      })
+    )
   }
 
   function changeEditorLanguage(name) {
@@ -349,6 +355,12 @@ function CodeScreen(props) {
   return (
     <>
       <Grid container>
+        <Backdrop
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={promiseInProgress}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
         <Grid item xs={9}>
           <Editor
             height="100vh"
