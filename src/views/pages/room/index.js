@@ -195,8 +195,6 @@ function CodeScreen(props) {
     };
   }, []);
 
-
-
   if (!username) return <Navigate to="/" replace />;
 
   const copyRightTemplate = `/*
