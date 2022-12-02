@@ -12,7 +12,6 @@ import {
 } from "@convergencelabs/monaco-collab-ext";
 import { debounce } from "lodash";
 import axios from "axios";
-import { usePromiseTracker, trackPromise } from "react-promise-tracker";
 
 const CURSOR_COLOR = {
   list: [
@@ -42,6 +41,7 @@ function CodeScreen(props) {
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
+  const [compileState, setCompileState] = useState(false)
 
   const compilerLanguages = useRef([])
   const [languageList, setLanguageList] = useState([]);
@@ -51,7 +51,6 @@ function CodeScreen(props) {
 
   const [editorLanguage, setEditorLanguage] = useState(null);
 
-  const { promiseInProgress } = usePromiseTracker();
 
   useEffect(() => {
     axios
@@ -142,6 +141,8 @@ function CodeScreen(props) {
       setSelectedVersionIndex(newVersionIndex);
     })
 
+    socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
+
 
     function removeUserCursor(oldUserId) {
       const users = usersRef.current;
@@ -195,6 +196,8 @@ function CodeScreen(props) {
       socket.current.off("ROOM:CONNECTION");
       socket.current.off("ROOM:DISCONNECT");
       socket.current.off('CHANGE_LANGUAGE')
+      socket.current.off('CHANGE_VERSION')
+      socket.current.off('COMPILE_STATE_CHANGED')
     };
   }, []);
 
@@ -302,18 +305,22 @@ function CodeScreen(props) {
   }, 500);
 
   async function handleRunCompiler() {
-    trackPromise(
-      axios.post("http://localhost:3001/compiler/execute", {
-        script: code,
-        language: compilerLanguages.current[selectedLanguageIndex].name,
-        version:
-          compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
-      }).then((res) => {
-        const output = res.data.output;
-        setOutput(output);
-        socket.current?.emit("OUTPUT_CHANGED", { roomId, output });   
-      })
-    )
+    setCompileState(true)
+    socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: true })
+
+    axios.post("http://localhost:3001/compiler/execute", {
+      script: code,
+      language: compilerLanguages.current[selectedLanguageIndex].name,
+      version:
+        compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
+    }).then((res) => {
+      const output = res.data.output;
+      setOutput(output);
+      setCompileState(false)
+      socket.current?.emit("OUTPUT_CHANGED", { roomId, output });
+      socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: false })
+    })
+
   }
 
   function changeEditorLanguage(name) {
@@ -357,7 +364,7 @@ function CodeScreen(props) {
       <Grid container>
         <Backdrop
           sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={promiseInProgress}
+          open={compileState}
         >
           <CircularProgress color="inherit" />
         </Backdrop>
