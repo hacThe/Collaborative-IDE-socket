@@ -64,6 +64,9 @@ input {
   color: #666;
   padding: 12px;
   font-family: monospace;
+  word-wrap: break-word;
+  white-space: -moz-pre-wrap;
+  white-space: pre-wrap;
 }
 
 .active-result-banner {
@@ -72,6 +75,9 @@ input {
   color: white;
   padding: 12px;
   font-family: monospace;
+  word-wrap: break-word;
+  white-space: -moz-pre-wrap;
+  white-space: pre-wrap;
 }
 
 .compiler-language-version {

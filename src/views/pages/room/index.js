@@ -383,7 +383,7 @@ function CodeScreen(props) {
             sx={{
               background: "#1e1e1e",
               padding: "24px",
-              minHeight: "100vh",
+              height: "100vh",
               display: "flex",
               flexDirection: "column",
               overflow: "auto",
@@ -427,7 +427,6 @@ function CodeScreen(props) {
               }}
               onChange={handleOnLanguageChange}
               value={languageList[selectedLanguageIndex] ?? ""}
-              label="Ngu"
               renderInput={(params) => (
                 <TextField {...params} label="Languages" />
               )}
