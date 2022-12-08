@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, IconButton, Collapse } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -12,6 +12,11 @@ import {
 } from "@convergencelabs/monaco-collab-ext";
 import { debounce } from "lodash";
 import axios from "axios";
+import Draggable from "react-draggable";
+import Carousel from "nuka-carousel/lib/carousel";
+import { KeyboardArrowLeftRounded, KeyboardArrowRightRounded } from "@mui/icons-material";
+import UserAvatarBox from "./components/userAvatarBox";
+import UserActionBar from "./components/userActionBar";
 
 const CURSOR_COLOR = {
   list: [
@@ -51,6 +56,47 @@ function CodeScreen(props) {
 
   const [editorLanguage, setEditorLanguage] = useState(null);
 
+  const AVATAR_BOX_WIDTH = 200;
+  const AVATAR_BOX_HEIGHT = 150;
+  const AVATAR_BOX_SPACING = 10;
+  const MAX_AVATAR_SHOW = 3;
+
+  const [avatarBoxes, setAvatarBoxes] = useState([])
+  const avatarBoxesRef = useRef([])
+
+  const editorUIRef = useRef(null);
+  const [editorBounds, setEditorBounds] = useState(null)
+
+  const communicateBoxRef = useRef(null)
+  const [communicateBoxWidth, setCommunicateBoxWidth] = useState(null)
+  const [communicateBoxHeight, setCommunicateBoxHeight] = useState(null)
+
+  const [expandVoiceTab, setExpandVoiceTab] = useState(true)
+
+  useEffect(() => {
+    if (!editorUIRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setEditorBounds(editorUIRef.current.getBoundingClientRect())
+    });
+
+    resizeObserver.observe(editorUIRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, [])
+
+  useEffect(() => {
+    if (!communicateBoxRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setCommunicateBoxWidth(communicateBoxRef.current.clientWidth)
+      setCommunicateBoxHeight(communicateBoxRef.current.clientHeight)
+    });
+
+    resizeObserver.observe(communicateBoxRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, [])
 
   useEffect(() => {
     axios
@@ -151,24 +197,31 @@ function CodeScreen(props) {
         remoteSelectionManager.removeSelection(oldUserId);
 
         const oldUserIndex = users.findIndex((item) => item.id === oldUserId);
-        const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
-        CURSOR_COLOR.list = CURSOR_COLOR.list
-          .splice(oldUserIndex, 1)
-          .push(oldCursorColor);
+        if (oldUserIndex > -1 && oldUserIndex < CURSOR_COLOR.list.length) {
+          const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
+          CURSOR_COLOR.list.splice(oldUserIndex, 1)
+          CURSOR_COLOR.list.push(oldCursorColor);
+        }
+        avatarBoxesRef.current = avatarBoxesRef.current.filter(item => item.props.id !== oldUserId)
+        setAvatarBoxes(avatarBoxesRef.current)
       }
     }
 
     function addUserCursor(newUserId) {
       const users = usersRef.current;
       if (remoteCursorManager && remoteSelectionManager) {
-        if (newUserId !== socket.current.id) {
-          const newUserIndex = users.findIndex((item) => item.id === newUserId);
-          const newUser = users[newUserIndex];
+        const newUserIndex = users.findIndex((item) => item.id === newUserId);
+        const newUser = users[newUserIndex];
+            
+        var cursorColor;
+        if (newUserIndex < CURSOR_COLOR.list.length) {
+          cursorColor = CURSOR_COLOR.list.pop()
+          CURSOR_COLOR.list.unshift(cursorColor)
+        } else {
+          cursorColor = CURSOR_COLOR.default
+        }
 
-          const cursorColor =
-            newUserIndex < CURSOR_COLOR.list.length
-              ? CURSOR_COLOR.list[newUserIndex]
-              : CURSOR_COLOR.default;
+        if (newUserId !== socket.current.id) {
           remoteCursorManager.addCursor(
             newUser.id,
             cursorColor,
@@ -179,6 +232,15 @@ function CodeScreen(props) {
             cursorColor,
             newUser.username
           );
+          avatarBoxesRef.current = [
+            ...avatarBoxesRef.current, 
+            UserAvatarBox({
+            id: newUser.id, 
+            name: newUser.username, 
+            color: cursorColor,
+            width: AVATAR_BOX_WIDTH,
+            height: AVATAR_BOX_HEIGHT})]
+          setAvatarBoxes(avatarBoxesRef.current)
         }
       }
     }
@@ -218,18 +280,32 @@ function CodeScreen(props) {
     const users = usersRef.current;
 
     for (let i in users) {
-      let user = users[i];
+      let user = users[users.length - i - 1];
+
+      var cursorColor;
+      if (i < CURSOR_COLOR.list.length) {
+        cursorColor = CURSOR_COLOR.list.pop()
+        CURSOR_COLOR.list.unshift(cursorColor)
+      } else {
+        cursorColor = CURSOR_COLOR.default
+      }
+
       if (user.id !== socket.current?.id) {
-        const cursorColor =
-          i < CURSOR_COLOR.list.length
-            ? CURSOR_COLOR.list[i]
-            : CURSOR_COLOR.default;
         remoteCursorManager.addCursor(user.id, cursorColor, user.username);
         remoteSelectionManager.addSelection(
           user.id,
           cursorColor,
           user.username
         );
+        avatarBoxesRef.current = [
+          ...avatarBoxesRef.current, 
+          UserAvatarBox({
+            id: user.id, 
+            name: user.username, 
+            color: cursorColor,
+            width: AVATAR_BOX_WIDTH,
+            height: AVATAR_BOX_HEIGHT})]
+        setAvatarBoxes(avatarBoxesRef.current)
       }
     }
   }
@@ -368,8 +444,73 @@ function CodeScreen(props) {
         >
           <CircularProgress color="inherit" />
         </Backdrop>
-        <Grid item xs={9}>
+        <Grid item xs={9} 
+            ref={editorUIRef}>
+          <Draggable
+            handle="#draggableHandler"
+            bounds={{
+              left: editorBounds?.left, 
+              top: editorBounds?.top, 
+              right: editorBounds?.right - communicateBoxWidth, 
+              bottom: editorBounds?.bottom - communicateBoxHeight,
+            }}>
+            <Box
+              ref={communicateBoxRef}
+              sx={{
+                top: "0px",
+                left: "0px",
+                position: "absolute",
+                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING)*(avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW),
+                minWidth: "150px",
+                zIndex: 1,
+                boxShadow: 1,
+              }}>
+              <UserActionBar 
+                id="draggableHandler" 
+                width={communicateBoxWidth - AVATAR_BOX_SPACING}
+                onCollapsed={(collapsed) => {
+                  setExpandVoiceTab(!collapsed)
+                }}/>
+              <Collapse in={avatarBoxes.length > 0 ? expandVoiceTab : false}>
+                <Carousel
+                  renderBottomCenterControls="null"
+                  renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
+                    <IconButton sx={{ left: "0px" }} onClick={previousSlide} disabled={previousDisabled}>
+                      <KeyboardArrowLeftRounded/>
+                    </IconButton>
+                  )}
+                  renderCenterRightControls={({ nextDisabled, nextSlide }) => (
+                    <IconButton sx={{ right: AVATAR_BOX_SPACING }} onClick={nextSlide} disabled={nextDisabled}>
+                      <KeyboardArrowRightRounded/>
+                    </IconButton>
+                  )}
+                  slidesToShow={ avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW }
+                  scrollMode="remainder">
+                  {/* <UserAvatarBox 
+                    color="#A545EE" 
+                    name="Trương Kim Lâm"
+                    width={AVATAR_BOX_WIDTH}
+                    height={AVATAR_BOX_HEIGHT}
+                    />
+                  <UserAvatarBox 
+                    color="#F85212" 
+                    name="Trần Lê Thanh Tùng"
+                    width={AVATAR_BOX_WIDTH}
+                    height={AVATAR_BOX_HEIGHT}
+                    />
+                  <UserAvatarBox 
+                    color="#355FFA" 
+                    name="Dương Hiển Thế"
+                    width={AVATAR_BOX_WIDTH}
+                    height={AVATAR_BOX_HEIGHT}
+                    /> */}
+                  {avatarBoxes}
+                </Carousel>
+              </Collapse>
+            </Box>
+          </Draggable>
           <Editor
+            sx={{ zIndex: 0, }}
             height="100vh"
             value={code}
             defaultLanguage="undefined"
