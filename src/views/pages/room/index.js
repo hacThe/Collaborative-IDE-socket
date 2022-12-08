@@ -3,8 +3,8 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, IconButton, Collapse } from "@mui/material";
-import { Box } from "@mui/system";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress } from "@mui/material";
+import { Box, Container } from "@mui/system";
 import {
   RemoteCursorManager,
   RemoteSelectionManager,
@@ -17,6 +17,29 @@ import Carousel from "nuka-carousel/lib/carousel";
 import { KeyboardArrowLeftRounded, KeyboardArrowRightRounded } from "@mui/icons-material";
 import UserAvatarBox from "./components/userAvatarBox";
 import UserActionBar from "./components/userActionBar";
+import SimplePeer from 'simple-peer';
+
+const Video = (props) => {
+  const ref = useRef()
+
+  useEffect(() => {
+    console.log('render UI Video')
+    props.peer.on('stream', stream => {
+      console.dir(`event stream`)
+      ref.current.srcObject = stream
+    })
+  }, [])
+  return (
+    <video
+      id={props.id}
+      height='40%'
+      width='50%'
+      autoPlay
+      playsInline
+      ref={ref}
+    />
+  )
+}
 
 const CURSOR_COLOR = {
   list: [
@@ -32,6 +55,10 @@ const CURSOR_COLOR = {
   default: "#808080",
 };
 
+const videoConstraint = {
+  height: window.innerHeight / 2,
+  width: window.innerWidth / 2
+}
 
 
 function CodeScreen(props) {
@@ -53,8 +80,10 @@ function CodeScreen(props) {
   const versionList = useRef([])
   const [selectedLanguageIndex, setSelectedLanguageIndex] = useState(0);
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
-
   const [editorLanguage, setEditorLanguage] = useState(null);
+  const peersRef = useRef([])
+  const [peers, setPeers] = useState([])
+  const userVideo = useRef(null)
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -189,61 +218,36 @@ function CodeScreen(props) {
 
     socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
 
+    navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
+      userVideo.current.srcObject = stream
+      socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
+      socket.current.on('ALL_USERS', (users) => {
+        const temptPeers = []
+        users.forEach(userId => {
+          const peer = createPeer(userId, socket.current.id, stream)
+          peersRef.current.push({
+            peerId: userId,
+            peer
+          })
+          temptPeers.push(peer)
+        });
+        setPeers(temptPeers)
+      })
 
-    function removeUserCursor(oldUserId) {
-      const users = usersRef.current;
-      if (remoteCursorManager && remoteSelectionManager) {
-        remoteCursorManager.removeCursor(oldUserId);
-        remoteSelectionManager.removeSelection(oldUserId);
+      socket.current.on('ROOM:CONNECTION_MEDIA', ({ signal, callerID }) => {
+        const peer = addPeer(signal, callerID, stream)
+        setPeers(users => [...users, peer])
+        peersRef.current.push({
+          peerId: callerID,
+          peer
+        })
+      })
 
-        const oldUserIndex = users.findIndex((item) => item.id === oldUserId);
-        if (oldUserIndex > -1 && oldUserIndex < CURSOR_COLOR.list.length) {
-          const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
-          CURSOR_COLOR.list.splice(oldUserIndex, 1)
-          CURSOR_COLOR.list.push(oldCursorColor);
-        }
-        avatarBoxesRef.current = avatarBoxesRef.current.filter(item => item.props.id !== oldUserId)
-        setAvatarBoxes(avatarBoxesRef.current)
-      }
-    }
-
-    function addUserCursor(newUserId) {
-      const users = usersRef.current;
-      if (remoteCursorManager && remoteSelectionManager) {
-        const newUserIndex = users.findIndex((item) => item.id === newUserId);
-        const newUser = users[newUserIndex];
-            
-        var cursorColor;
-        if (newUserIndex < CURSOR_COLOR.list.length) {
-          cursorColor = CURSOR_COLOR.list.pop()
-          CURSOR_COLOR.list.unshift(cursorColor)
-        } else {
-          cursorColor = CURSOR_COLOR.default
-        }
-
-        if (newUserId !== socket.current.id) {
-          remoteCursorManager.addCursor(
-            newUser.id,
-            cursorColor,
-            newUser.username
-          );
-          remoteSelectionManager.addSelection(
-            newUser.id,
-            cursorColor,
-            newUser.username
-          );
-          avatarBoxesRef.current = [
-            ...avatarBoxesRef.current, 
-            UserAvatarBox({
-            id: newUser.id, 
-            name: newUser.username, 
-            color: cursorColor,
-            width: AVATAR_BOX_WIDTH,
-            height: AVATAR_BOX_HEIGHT})]
-          setAvatarBoxes(avatarBoxesRef.current)
-        }
-      }
-    }
+      socket.current.on('RECEIVE_RETURN_SIGNAL', ({ signal, id }) => {
+        const item = peersRef.current.find(p => p.peerId === id)
+        item.peer.signal(signal)
+      })
+    })
 
     return () => {
       socket.current.off("CODE_INSERT");
@@ -262,6 +266,93 @@ function CodeScreen(props) {
       socket.current.off('COMPILE_STATE_CHANGED')
     };
   }, []);
+
+  function createPeer(userToSignal, callerID, stream) {
+    console.log('function create peer')
+    const peer = new SimplePeer({
+      initiator: true,
+      trickle: false,
+      stream,
+    })
+
+    peer.on('signal', signal => {
+      socket.current.emit('SIGNAL_SENT', { userToSignal, callerID, signal })
+    })
+
+    return peer
+  }
+
+  function addPeer(incomingSignal, callerID, stream) {
+    const peer = new SimplePeer({
+      initiator: false,
+      trickle: false,
+      stream,
+    })
+
+    peer.on('signal', signal => {
+      socket.current.emit('SIGNAL_RETURN', { signal, callerID })
+    })
+
+    peer.signal(incomingSignal)
+    return peer
+  }
+
+  function removeUserCursor(oldUserId) {
+    const users = usersRef.current;
+    if (remoteCursorManager && remoteSelectionManager) {
+      remoteCursorManager.removeCursor(oldUserId);
+      remoteSelectionManager.removeSelection(oldUserId);
+
+      const oldUserIndex = users.findIndex((item) => item.id === oldUserId);
+      if (oldUserIndex > -1 && oldUserIndex < CURSOR_COLOR.list.length) {
+        const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
+        CURSOR_COLOR.list.splice(oldUserIndex, 1)
+        CURSOR_COLOR.list.push(oldCursorColor);
+      }
+      avatarBoxesRef.current = avatarBoxesRef.current.filter(item => item.props.id !== oldUserId)
+      setAvatarBoxes(avatarBoxesRef.current)
+    }
+  }
+
+  function addUserCursor(newUserId) {
+    const users = usersRef.current;
+    if (remoteCursorManager && remoteSelectionManager) {
+      const newUserIndex = users.findIndex((item) => item.id === newUserId);
+      const newUser = users[newUserIndex];
+
+      var cursorColor;
+      if (newUserIndex < CURSOR_COLOR.list.length) {
+        cursorColor = CURSOR_COLOR.list.pop()
+        CURSOR_COLOR.list.unshift(cursorColor)
+      } else {
+        cursorColor = CURSOR_COLOR.default
+      }
+
+      if (newUserId !== socket.current.id) {
+        remoteCursorManager.addCursor(
+          newUser.id,
+          cursorColor,
+          newUser.username
+        );
+        remoteSelectionManager.addSelection(
+          newUser.id,
+          cursorColor,
+          newUser.username
+        );
+        avatarBoxesRef.current = [
+          ...avatarBoxesRef.current,
+          UserAvatarBox({
+            id: newUser.id,
+            name: newUser.username,
+            color: cursorColor,
+            width: AVATAR_BOX_WIDTH,
+            height: AVATAR_BOX_HEIGHT
+          })]
+        setAvatarBoxes(avatarBoxesRef.current)
+      }
+    }
+  }
+
 
   if (!username) return <Navigate to="/" replace />;
 
@@ -298,13 +389,14 @@ function CodeScreen(props) {
           user.username
         );
         avatarBoxesRef.current = [
-          ...avatarBoxesRef.current, 
+          ...avatarBoxesRef.current,
           UserAvatarBox({
-            id: user.id, 
-            name: user.username, 
+            id: user.id,
+            name: user.username,
             color: cursorColor,
             width: AVATAR_BOX_WIDTH,
-            height: AVATAR_BOX_HEIGHT})]
+            height: AVATAR_BOX_HEIGHT
+          })]
         setAvatarBoxes(avatarBoxesRef.current)
       }
     }
@@ -444,14 +536,14 @@ function CodeScreen(props) {
         >
           <CircularProgress color="inherit" />
         </Backdrop>
-        <Grid item xs={9} 
-            ref={editorUIRef}>
+        <Grid item xs={9}
+          ref={editorUIRef}>
           <Draggable
             handle="#draggableHandler"
             bounds={{
-              left: editorBounds?.left, 
-              top: editorBounds?.top, 
-              right: editorBounds?.right - communicateBoxWidth, 
+              left: editorBounds?.left,
+              top: editorBounds?.top,
+              right: editorBounds?.right - communicateBoxWidth,
               bottom: editorBounds?.bottom - communicateBoxHeight,
             }}>
             <Box
@@ -460,31 +552,31 @@ function CodeScreen(props) {
                 top: "0px",
                 left: "0px",
                 position: "absolute",
-                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING)*(avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW),
+                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW),
                 minWidth: "150px",
                 zIndex: 1,
                 boxShadow: 1,
               }}>
-              <UserActionBar 
-                id="draggableHandler" 
+              <UserActionBar
+                id="draggableHandler"
                 width={communicateBoxWidth - AVATAR_BOX_SPACING}
                 onCollapsed={(collapsed) => {
                   setExpandVoiceTab(!collapsed)
-                }}/>
+                }} />
               <Collapse in={avatarBoxes.length > 0 ? expandVoiceTab : false}>
                 <Carousel
                   renderBottomCenterControls="null"
                   renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
                     <IconButton sx={{ left: "0px" }} onClick={previousSlide} disabled={previousDisabled}>
-                      <KeyboardArrowLeftRounded/>
+                      <KeyboardArrowLeftRounded />
                     </IconButton>
                   )}
                   renderCenterRightControls={({ nextDisabled, nextSlide }) => (
                     <IconButton sx={{ right: AVATAR_BOX_SPACING }} onClick={nextSlide} disabled={nextDisabled}>
-                      <KeyboardArrowRightRounded/>
+                      <KeyboardArrowRightRounded />
                     </IconButton>
                   )}
-                  slidesToShow={ avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW }
+                  slidesToShow={avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW}
                   scrollMode="remainder">
                   {/* <UserAvatarBox 
                     color="#A545EE" 
@@ -640,6 +732,30 @@ function CodeScreen(props) {
       </Grid>
     </>
   );
+
+
+
+  // return (
+  //   <Container
+  //     padding='20px'
+  //     display='flex'
+  //     height='100vh'
+  //     width='90%'
+  //     margin='auto'
+  //     flex-wrap='wrap'
+  //   >
+  //     <video
+  //       id="userVideo"
+  //       height='40%'
+  //       width='50%'
+  //       muted ref={userVideo} autoPlay playsInline
+  //     />
+  //     {peers.map((peer, index) => {
+  //       return <Video id={`remote ${index}`} key={index} peer={peer} />
+  //     })}
+
+  //   </Container>
+  // );
 }
 
 export default CodeScreen;
