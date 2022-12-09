@@ -10,7 +10,7 @@ import {
   RemoteSelectionManager,
   EditorContentManager,
 } from "@convergencelabs/monaco-collab-ext";
-import { debounce } from "lodash";
+import { debounce, result } from "lodash";
 import axios from "axios";
 import Draggable from "react-draggable";
 import Carousel from "nuka-carousel/lib/carousel";
@@ -19,13 +19,12 @@ import UserAvatarBox from "./components/userAvatarBox";
 import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
 
+
 const Video = (props) => {
   const ref = useRef()
 
   useEffect(() => {
-    console.log('render UI Video')
     props.peer.on('stream', stream => {
-      console.dir(`event stream`)
       ref.current.srcObject = stream
     })
   }, [])
@@ -200,6 +199,7 @@ function CodeScreen(props) {
       setUsers(users);
       removeUserCursor(userId);
       usersRef.current = users;
+      // remove peer
     });
 
     socket.current.on('CHANGE_LANGUAGE', (newLanguage) => {
@@ -247,6 +247,19 @@ function CodeScreen(props) {
         const item = peersRef.current.find(p => p.peerId === id)
         item.peer.signal(signal)
       })
+
+      socket.current.on('ROOM:DISCONNECTION_MEDIA', (userId) => {
+        var removePeer = peersRef.current.find(p => p.peerId === userId)
+        if (removePeer) {
+          removePeer.peer.destroy()
+        }
+        var remainPeers = peersRef.current.filter(item => item.peerId !== userId)
+
+        peersRef.current = remainPeers
+
+        setPeers(remainPeers.map(item => item.peer))
+      })
+
     })
 
     return () => {
@@ -735,27 +748,27 @@ function CodeScreen(props) {
 
 
 
-  // return (
-  //   <Container
-  //     padding='20px'
-  //     display='flex'
-  //     height='100vh'
-  //     width='90%'
-  //     margin='auto'
-  //     flex-wrap='wrap'
-  //   >
-  //     <video
-  //       id="userVideo"
-  //       height='40%'
-  //       width='50%'
-  //       muted ref={userVideo} autoPlay playsInline
-  //     />
-  //     {peers.map((peer, index) => {
-  //       return <Video id={`remote ${index}`} key={index} peer={peer} />
-  //     })}
+  return (
+    <Container
+      padding='20px'
+      display='flex'
+      height='100vh'
+      width='90%'
+      margin='auto'
+      flex-wrap='wrap'
+    >
+      <video
+        id="userVideo"
+        height='40%'
+        width='50%'
+        muted ref={userVideo} autoPlay playsInline
+      />
+      {peers.map((peer, index) => {
+        return <Video id={`remote ${index}`} key={index} peer={peer} />
+      })}
 
-  //   </Container>
-  // );
+    </Container>
+  );
 }
 
 export default CodeScreen;
