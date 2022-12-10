@@ -10,7 +10,7 @@ import {
   RemoteSelectionManager,
   EditorContentManager,
 } from "@convergencelabs/monaco-collab-ext";
-import { debounce, result } from "lodash";
+import { debounce } from "lodash";
 import axios from "axios";
 import Draggable from "react-draggable";
 import Carousel from "nuka-carousel/lib/carousel";
@@ -39,6 +39,17 @@ const Video = (props) => {
     />
   )
 }
+
+const copyRightTemplate = `/*
+  * Copyright (c) 2022 UIT KTPM2019
+  * All rights reserved.
+  * 19522496 Trần Lê Thanh Tùng
+  * 19521743 Trương Kim Lâm
+  * 19522252 Dương Hiển Thê
+  */
+ 
+ 
+  `;
 
 const CURSOR_COLOR = {
   list: [
@@ -369,16 +380,7 @@ function CodeScreen(props) {
 
   if (!username) return <Navigate to="/" replace />;
 
-  const copyRightTemplate = `/*
-  * Copyright (c) 2022 UIT KTPM2019
-  * All rights reserved.
-  * 19522496 Trần Lê Thanh Tùng
-  * 19521743 Trương Kim Lâm
-  * 19522252 Dương Hiển Thê
-  */
- 
- 
-  `;
+
 
   function addInitialCursors() {
     const users = usersRef.current;
@@ -745,30 +747,215 @@ function CodeScreen(props) {
       </Grid>
     </>
   );
+  function turnOnOffCamera() {
+    for (let index in userVideo.current.srcObject.getVideoTracks()) {
+      userVideo.current.srcObject.getVideoTracks()[index].enabled = !userVideo.current.srcObject.getVideoTracks()[index].enabled
+    }
+  }
 
+  function turnOnOffMicrophone() {
+    for (let index in userVideo.current.srcObject.getAudioTracks()) {
+      userVideo.current.srcObject.getAudioTracks()[index].enabled = !userVideo.current.srcObject.getAudioTracks()[index].enabled
+    }
+  }
 
+  function isUserTurnOnCamera() {
+    var tracks = userVideo.current.srcObject.getVideoTracks()
+    if (tracks.length !== 0) {
+      return tracks[0].enabled
+    }
+    return false
+  }
+
+  function isUserTurnOnMicrophone() {
+    var tracks = userVideo.current.srcObject.getAudioTracks()
+    if (tracks.length !== 0) {
+      return tracks[0].enabled
+    }
+    return false
+  }
 
   return (
-    <Container
-      padding='20px'
-      display='flex'
-      height='100vh'
-      width='90%'
-      margin='auto'
-      flex-wrap='wrap'
-    >
-      <video
-        id="userVideo"
-        height='40%'
-        width='50%'
-        muted ref={userVideo} autoPlay playsInline
-      />
-      {peers.map((peer, index) => {
-        return <Video id={`remote ${index}`} key={index} peer={peer} />
-      })}
+    <>
+      <Grid container>
+        <Backdrop
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={compileState}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+        <Grid item xs={9}>
+          <Editor
+            height="100vh"
+            value={code}
+            defaultLanguage="undefined"
+            language={editorLanguage}
+            defaultValue={copyRightTemplate + code}
+            onChange={handleOnchange}
+            onMount={handleOnMount}
+            theme="vs-dark"
+            options={{
+              cursorBlinking: "blink",
+              cursorStyle: "line",
+              fixedOverflowWidgets: "true",
+            }}
+          />
+        </Grid>
+        <Grid item xs={3}>
+          <Box
+            sx={{
+              background: "#1e1e1e",
+              padding: "24px",
+              height: "100vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "auto",
+            }}
+          >
+            <Box>
+              <h3>
+                Username: <strong>{username}</strong>
+              </h3>
+              <h3>
+                Room Id: <strong>{roomId}</strong>{" "}
+                <span
+                  style={{ display: "inline-block" }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(roomId);
+                  }}
+                  className="icon right"
+                >
+                  <img
+                    src="http://clipground.com/images/copy-4.png"
+                    title="Click to Copy"
+                    alt="Copy room id"
+                  />
+                </span>
+              </h3>
+              <h3>
+                Room members: <strong> {users.length}</strong>
+              </h3>
+            </Box>
 
-    </Container>
+            <Autocomplete
+              disableClearable
+              id="compiler-language"
+              options={languageList}
+              sx={{
+                marginTop: "12px",
+                ".MuiOutlinedInput-root": {
+                  borderColor: "white",
+                  borderWidth: 10,
+                },
+              }}
+              onChange={handleOnLanguageChange}
+              value={languageList[selectedLanguageIndex] ?? ""}
+              renderInput={(params) => (
+                <TextField {...params} label="Languages" />
+              )}
+            />
+
+            <Autocomplete
+              disableClearable
+              id="compiler-language-version"
+              options={versionList.current}
+              sx={{ marginTop: "12px" }}
+              onChange={handleOnLanguageVersionChange}
+              value={versionList.current[selectedVersionIndex] ?? ""}
+              renderInput={(params) => (
+                <TextField {...params} label="Language versions" />
+              )}
+            />
+
+            {/* <Box sx={{ marginTop: "12px" }}>
+              <Button
+                variant="contained"
+                fullWidth={true}
+                size="small"
+                onClick={handleRunCompiler}>
+                Save compiler language
+              </Button>
+            </Box> */}
+            <Box sx={{ marginTop: "24px" }}>
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth={true}
+                onClick={handleRunCompiler}
+              >
+                Run
+              </Button>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: "24px",
+              }}
+            >
+              {/* <Box sx={{ flex: 1 }}>
+                <h4>Input</h4>
+                <textarea></textarea>
+              </Box> */}
+
+              <Box sx={{ flex: 1 }}>
+                <h4>Output</h4>
+                <Box
+                  className={
+                    output === "" ? "result-banner" : "active-result-banner"
+                  }
+                  sx={{ overflow: "auto", height: "32vh" }}
+                >
+                  <p>{output === "" ? "This is result banner" : output}</p>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>
+    </>
   );
+
+
+
+  // return (
+  //   <Container
+  //     padding='20px'
+  //     display='flex'
+  //     height='100vh'
+  //     width='90%'
+  //     margin='auto'
+  //     flex-wrap='wrap'
+  //   >
+  //     <h3>
+  //       Room Id: <strong>{roomId}</strong>{" "}
+  //       <span
+  //         style={{ display: "inline-block" }}
+  //         onClick={() => {
+  //           navigator.clipboard.writeText(roomId);
+  //         }}
+  //         className="icon right"
+  //       >
+  //         <img
+  //           src="http://clipground.com/images/copy-4.png"
+  //           title="Click to Copy"
+  //           alt="Copy room id"
+  //         />
+  //       </span>
+  //     </h3>
+  //     <video
+  //       id="userVideo"
+  //       height='40%'
+  //       width='50%'
+  //       muted ref={userVideo} autoPlay playsInline
+  //     />
+  //     {peers.map((peer, index) => {
+  //       return <Video id={`remote ${index}`} key={index} peer={peer} />
+  //     })}
+  //     <Button onClick={turnOnOffCamera}>Turn on/off camera</Button>
+  //     <Button onClick={turnOnOffMicrophone}>Turn on/off mic</Button>
+  //   </Container>
+  // );
 }
 
 export default CodeScreen;
