@@ -3,8 +3,8 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress } from "@mui/material";
-import { Box, Container } from "@mui/system";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton } from "@mui/material";
+import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
   RemoteSelectionManager,
@@ -20,25 +20,7 @@ import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
 
 
-const Video = (props) => {
-  const ref = useRef()
 
-  useEffect(() => {
-    props.peer.on('stream', stream => {
-      ref.current.srcObject = stream
-    })
-  }, [])
-  return (
-    <video
-      id={props.id}
-      height='40%'
-      width='50%'
-      autoPlay
-      playsInline
-      ref={ref}
-    />
-  )
-}
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -99,9 +81,6 @@ function CodeScreen(props) {
   const AVATAR_BOX_HEIGHT = 150;
   const AVATAR_BOX_SPACING = 10;
   const MAX_AVATAR_SHOW = 3;
-
-  const [avatarBoxes, setAvatarBoxes] = useState([])
-  const avatarBoxesRef = useRef([])
 
   const editorUIRef = useRef(null);
   const [editorBounds, setEditorBounds] = useState(null)
@@ -333,8 +312,6 @@ function CodeScreen(props) {
         CURSOR_COLOR.list.splice(oldUserIndex, 1)
         CURSOR_COLOR.list.push(oldCursorColor);
       }
-      avatarBoxesRef.current = avatarBoxesRef.current.filter(item => item.props.id !== oldUserId)
-      setAvatarBoxes(avatarBoxesRef.current)
     }
   }
 
@@ -363,16 +340,7 @@ function CodeScreen(props) {
           cursorColor,
           newUser.username
         );
-        avatarBoxesRef.current = [
-          ...avatarBoxesRef.current,
-          UserAvatarBox({
-            id: newUser.id,
-            name: newUser.username,
-            color: cursorColor,
-            width: AVATAR_BOX_WIDTH,
-            height: AVATAR_BOX_HEIGHT
-          })]
-        setAvatarBoxes(avatarBoxesRef.current)
+
       }
     }
   }
@@ -403,16 +371,6 @@ function CodeScreen(props) {
           cursorColor,
           user.username
         );
-        avatarBoxesRef.current = [
-          ...avatarBoxesRef.current,
-          UserAvatarBox({
-            id: user.id,
-            name: user.username,
-            color: cursorColor,
-            width: AVATAR_BOX_WIDTH,
-            height: AVATAR_BOX_HEIGHT
-          })]
-        setAvatarBoxes(avatarBoxesRef.current)
       }
     }
   }
@@ -542,6 +500,34 @@ function CodeScreen(props) {
     })
   }
 
+  function turnOnOffCamera() {
+    for (let index in userVideo.current.srcObject.getVideoTracks()) {
+      userVideo.current.srcObject.getVideoTracks()[index].enabled = !userVideo.current.srcObject.getVideoTracks()[index].enabled
+    }
+  }
+
+  function turnOnOffMicrophone() {
+    for (let index in userVideo.current.srcObject.getAudioTracks()) {
+      userVideo.current.srcObject.getAudioTracks()[index].enabled = !userVideo.current.srcObject.getAudioTracks()[index].enabled
+    }
+  }
+
+  function isUserTurnOnCamera() {
+    var tracks = userVideo.current.srcObject.getVideoTracks()
+    if (tracks.length !== 0) {
+      return tracks[0].enabled
+    }
+    return false
+  }
+
+  function isUserTurnOnMicrophone() {
+    var tracks = userVideo.current.srcObject.getAudioTracks()
+    if (tracks.length !== 0) {
+      return tracks[0].enabled
+    }
+    return false
+  }
+
   return (
     <>
       <Grid container>
@@ -567,7 +553,7 @@ function CodeScreen(props) {
                 top: "0px",
                 left: "0px",
                 position: "absolute",
-                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW),
+                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length + 1 < MAX_AVATAR_SHOW ? peers.length + 1 : MAX_AVATAR_SHOW),
                 minWidth: "150px",
                 zIndex: 1,
                 boxShadow: 1,
@@ -578,7 +564,7 @@ function CodeScreen(props) {
                 onCollapsed={(collapsed) => {
                   setExpandVoiceTab(!collapsed)
                 }} />
-              <Collapse in={avatarBoxes.length > 0 ? expandVoiceTab : false}>
+              <Collapse in={expandVoiceTab}>
                 <Carousel
                   renderBottomCenterControls="null"
                   renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
@@ -591,7 +577,7 @@ function CodeScreen(props) {
                       <KeyboardArrowRightRounded />
                     </IconButton>
                   )}
-                  slidesToShow={avatarBoxes.length < MAX_AVATAR_SHOW ? avatarBoxes.length : MAX_AVATAR_SHOW}
+                  slidesToShow={peers.length + 1 < MAX_AVATAR_SHOW ? peers.length + 1 : MAX_AVATAR_SHOW}
                   scrollMode="remainder">
                   {/* <UserAvatarBox 
                     color="#A545EE" 
@@ -611,7 +597,18 @@ function CodeScreen(props) {
                     width={AVATAR_BOX_WIDTH}
                     height={AVATAR_BOX_HEIGHT}
                     /> */}
-                  {avatarBoxes}
+                  <video
+                    style={{ objectFit: 'cover' }}
+                    id="userVideo"
+                    height={AVATAR_BOX_HEIGHT}
+                    width={AVATAR_BOX_WIDTH}
+                    muted ref={userVideo} autoPlay playsInline
+                  />
+                  {peers.map((p, index) => {
+                    var userId = peersRef.current[index].peerId
+                    var username = usersRef.current.find(u => u.id === userId)
+                    return UserAvatarBox({ id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p })
+                  })}
                 </Carousel>
               </Collapse>
             </Box>
@@ -747,175 +744,6 @@ function CodeScreen(props) {
       </Grid>
     </>
   );
-  function turnOnOffCamera() {
-    for (let index in userVideo.current.srcObject.getVideoTracks()) {
-      userVideo.current.srcObject.getVideoTracks()[index].enabled = !userVideo.current.srcObject.getVideoTracks()[index].enabled
-    }
-  }
-
-  function turnOnOffMicrophone() {
-    for (let index in userVideo.current.srcObject.getAudioTracks()) {
-      userVideo.current.srcObject.getAudioTracks()[index].enabled = !userVideo.current.srcObject.getAudioTracks()[index].enabled
-    }
-  }
-
-  function isUserTurnOnCamera() {
-    var tracks = userVideo.current.srcObject.getVideoTracks()
-    if (tracks.length !== 0) {
-      return tracks[0].enabled
-    }
-    return false
-  }
-
-  function isUserTurnOnMicrophone() {
-    var tracks = userVideo.current.srcObject.getAudioTracks()
-    if (tracks.length !== 0) {
-      return tracks[0].enabled
-    }
-    return false
-  }
-
-  return (
-    <>
-      <Grid container>
-        <Backdrop
-          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={compileState}
-        >
-          <CircularProgress color="inherit" />
-        </Backdrop>
-        <Grid item xs={9}>
-          <Editor
-            height="100vh"
-            value={code}
-            defaultLanguage="undefined"
-            language={editorLanguage}
-            defaultValue={copyRightTemplate + code}
-            onChange={handleOnchange}
-            onMount={handleOnMount}
-            theme="vs-dark"
-            options={{
-              cursorBlinking: "blink",
-              cursorStyle: "line",
-              fixedOverflowWidgets: "true",
-            }}
-          />
-        </Grid>
-        <Grid item xs={3}>
-          <Box
-            sx={{
-              background: "#1e1e1e",
-              padding: "24px",
-              height: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "auto",
-            }}
-          >
-            <Box>
-              <h3>
-                Username: <strong>{username}</strong>
-              </h3>
-              <h3>
-                Room Id: <strong>{roomId}</strong>{" "}
-                <span
-                  style={{ display: "inline-block" }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(roomId);
-                  }}
-                  className="icon right"
-                >
-                  <img
-                    src="http://clipground.com/images/copy-4.png"
-                    title="Click to Copy"
-                    alt="Copy room id"
-                  />
-                </span>
-              </h3>
-              <h3>
-                Room members: <strong> {users.length}</strong>
-              </h3>
-            </Box>
-
-            <Autocomplete
-              disableClearable
-              id="compiler-language"
-              options={languageList}
-              sx={{
-                marginTop: "12px",
-                ".MuiOutlinedInput-root": {
-                  borderColor: "white",
-                  borderWidth: 10,
-                },
-              }}
-              onChange={handleOnLanguageChange}
-              value={languageList[selectedLanguageIndex] ?? ""}
-              renderInput={(params) => (
-                <TextField {...params} label="Languages" />
-              )}
-            />
-
-            <Autocomplete
-              disableClearable
-              id="compiler-language-version"
-              options={versionList.current}
-              sx={{ marginTop: "12px" }}
-              onChange={handleOnLanguageVersionChange}
-              value={versionList.current[selectedVersionIndex] ?? ""}
-              renderInput={(params) => (
-                <TextField {...params} label="Language versions" />
-              )}
-            />
-
-            {/* <Box sx={{ marginTop: "12px" }}>
-              <Button
-                variant="contained"
-                fullWidth={true}
-                size="small"
-                onClick={handleRunCompiler}>
-                Save compiler language
-              </Button>
-            </Box> */}
-            <Box sx={{ marginTop: "24px" }}>
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth={true}
-                onClick={handleRunCompiler}
-              >
-                Run
-              </Button>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                marginTop: "24px",
-              }}
-            >
-              {/* <Box sx={{ flex: 1 }}>
-                <h4>Input</h4>
-                <textarea></textarea>
-              </Box> */}
-
-              <Box sx={{ flex: 1 }}>
-                <h4>Output</h4>
-                <Box
-                  className={
-                    output === "" ? "result-banner" : "active-result-banner"
-                  }
-                  sx={{ overflow: "auto", height: "32vh" }}
-                >
-                  <p>{output === "" ? "This is result banner" : output}</p>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </Grid>
-      </Grid>
-    </>
-  );
-
 
 
   // return (
