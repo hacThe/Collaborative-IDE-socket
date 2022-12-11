@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -18,6 +18,7 @@ import { KeyboardArrowLeftRounded, KeyboardArrowRightRounded } from "@mui/icons-
 import UserAvatarBox from "./components/userAvatarBox";
 import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
+import MainAvatarBox from "./components/mainAvatarBox";
 
 
 
@@ -539,7 +540,7 @@ function CodeScreen(props) {
         </Backdrop>
         <Grid item xs={9}
           ref={editorUIRef}>
-          <Draggable
+          <Draggable 
             handle="#draggableHandler"
             bounds={{
               left: editorBounds?.left,
@@ -553,7 +554,6 @@ function CodeScreen(props) {
                 top: "0px",
                 left: "0px",
                 position: "absolute",
-                width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length + 1 < MAX_AVATAR_SHOW ? peers.length + 1 : MAX_AVATAR_SHOW),
                 minWidth: "150px",
                 zIndex: 1,
                 boxShadow: 1,
@@ -565,51 +565,73 @@ function CodeScreen(props) {
                   setExpandVoiceTab(!collapsed)
                 }} />
               <Collapse in={expandVoiceTab}>
-                <Carousel
-                  renderBottomCenterControls="null"
-                  renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
-                    <IconButton sx={{ left: "0px" }} onClick={previousSlide} disabled={previousDisabled}>
-                      <KeyboardArrowLeftRounded />
-                    </IconButton>
-                  )}
-                  renderCenterRightControls={({ nextDisabled, nextSlide }) => (
-                    <IconButton sx={{ right: AVATAR_BOX_SPACING }} onClick={nextSlide} disabled={nextDisabled}>
-                      <KeyboardArrowRightRounded />
-                    </IconButton>
-                  )}
-                  slidesToShow={peers.length + 1 < MAX_AVATAR_SHOW ? peers.length + 1 : MAX_AVATAR_SHOW}
-                  scrollMode="remainder">
-                  {/* <UserAvatarBox 
-                    color="#A545EE" 
-                    name="Trương Kim Lâm"
-                    width={AVATAR_BOX_WIDTH}
-                    height={AVATAR_BOX_HEIGHT}
-                    />
-                  <UserAvatarBox 
-                    color="#F85212" 
-                    name="Trần Lê Thanh Tùng"
-                    width={AVATAR_BOX_WIDTH}
-                    height={AVATAR_BOX_HEIGHT}
-                    />
-                  <UserAvatarBox 
-                    color="#355FFA" 
-                    name="Dương Hiển Thế"
-                    width={AVATAR_BOX_WIDTH}
-                    height={AVATAR_BOX_HEIGHT}
-                    /> */}
-                  <video
-                    style={{ objectFit: 'cover' }}
-                    id="userVideo"
+                <div 
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                  }}>
+                  <MainAvatarBox 
+                    id="userVideo" 
+                    name="You" 
+                    color={CURSOR_COLOR.default}
                     height={AVATAR_BOX_HEIGHT}
                     width={AVATAR_BOX_WIDTH}
-                    muted ref={userVideo} autoPlay playsInline
+                    videoRef={userVideo}/>
+                  <Divider 
+                    sx={{
+                      margin: "54px 8px 54px 8px",
+                      width: "1px",
+                      backgroundColor: "#FFFFFF15",
+                    }}
                   />
-                  {peers.map((p, index) => {
-                    var userId = peersRef.current[index].peerId
-                    var username = usersRef.current.find(u => u.id === userId)
-                    return UserAvatarBox({ id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p })
-                  })}
-                </Carousel>
+                  <Box
+                    sx={{
+                      display: peers.length > 0 ? "inline" : "none",
+                      width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW),
+                    }}>
+                      <Carousel
+                      sx={{
+                        position: "relative",
+                      }}
+                      renderBottomCenterControls="null"
+                      renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
+                        <IconButton sx={{ left: "0px" }} onClick={previousSlide} disabled={previousDisabled}>
+                          <KeyboardArrowLeftRounded />
+                        </IconButton>
+                      )}
+                      renderCenterRightControls={({ nextDisabled, nextSlide }) => (
+                        <IconButton sx={{ right: AVATAR_BOX_SPACING }} onClick={nextSlide} disabled={nextDisabled}>
+                          <KeyboardArrowRightRounded />
+                        </IconButton>
+                      )}
+                      slidesToShow={peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW}
+                      scrollMode="remainder">
+                      {/* <UserAvatarBox 
+                        color="#A545EE" 
+                        name="Trương Kim Lâm"
+                        width={AVATAR_BOX_WIDTH}
+                        height={AVATAR_BOX_HEIGHT}
+                        />
+                      <UserAvatarBox 
+                        color="#F85212" 
+                        name="Trần Lê Thanh Tùng"
+                        width={AVATAR_BOX_WIDTH}
+                        height={AVATAR_BOX_HEIGHT}
+                        />
+                      <UserAvatarBox 
+                        color="#355FFA" 
+                        name="Dương Hiển Thế"
+                        width={AVATAR_BOX_WIDTH}
+                        height={AVATAR_BOX_HEIGHT}
+                        /> */}
+                      {peers.map((p, index) => {
+                        var userId = peersRef.current[index].peerId
+                        var username = usersRef.current.find(u => u.id === userId).username
+                        return UserAvatarBox({ id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p })
+                      })}
+                    </Carousel>
+                  </Box>
+                </div>
               </Collapse>
             </Box>
           </Draggable>

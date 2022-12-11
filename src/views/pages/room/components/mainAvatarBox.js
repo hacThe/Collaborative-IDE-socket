@@ -1,33 +1,7 @@
 import { PersonRounded } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
-import { useEffect, useRef } from "react";
 
-const AVATAR_BOX_WIDTH = 200;
-const AVATAR_BOX_HEIGHT = 150;
-
-const Video = (props) => {
-    const ref = useRef()
-
-    useEffect(() => {
-        props.peer.on('stream', stream => {
-            ref.current.srcObject = stream
-        })
-    }, [])
-
-    return (
-        <video
-            id={props.id}
-            style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
-            height={AVATAR_BOX_HEIGHT}
-            width={AVATAR_BOX_WIDTH}
-            autoPlay
-            playsInline
-            ref={ref}
-        />
-    )
-}
-
-function UserAvatarBox({ id, name, color, width, height, peer }) {
+function MainAvatarBox({ id, name, color, width, height, videoRef }) {
     return (
         <Box
             key={id}
@@ -42,7 +16,13 @@ function UserAvatarBox({ id, name, color, width, height, peer }) {
                 position: "relative",
                 overflow: "hidden"
             }}>
-            <Video peer={peer} id={id} />
+            <video
+                style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
+                id={id}
+                height={height}
+                width={width}
+                muted ref={videoRef} autoPlay playsInline
+            />
             <PersonRounded
                 fontSize="large"
                 sx={{
@@ -65,4 +45,4 @@ function UserAvatarBox({ id, name, color, width, height, peer }) {
     );
 }
 
-export default UserAvatarBox
+export default MainAvatarBox
