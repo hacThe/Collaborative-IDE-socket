@@ -60,6 +60,9 @@ function CodeScreen(props) {
   var contentManager = null;
   var socket = useRef(null)
 
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+
   const usersRef = useRef(null);
   const { roomId } = useParams();
   const [code, setCode] = useState("");
@@ -125,8 +128,6 @@ function CodeScreen(props) {
         compilerLanguages.current = fetchCompilerLanguages
         setLanguageList(fetchCompilerLanguages.map((item) => item.name));
         versionList.current = fetchCompilerLanguages[selectedLanguageIndex].versions
-
-        changeEditorLanguage(fetchCompilerLanguages[selectedLanguageIndex].name);
       })
       .catch((error) => {
         console.log(`Error when get compiler languages\n ${error}`);
@@ -200,7 +201,7 @@ function CodeScreen(props) {
         setSelectedVersionIndex(0);
         versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
       }
-      changeEditorLanguage(newLanguage);
+      changeEditorLanguage(compilerLanguages.current[index].languageCode);
     })
 
     socket.current.on('CHANGE_VERSION', (newVersionIndex) => {
@@ -377,6 +378,11 @@ function CodeScreen(props) {
   }
 
   function handleOnMount(editor, monaco) {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    changeEditorLanguage(compilerLanguages.current[selectedLanguageIndex].languageCode);
+
     remoteCursorManager = new RemoteCursorManager({
       editor: editor,
       tooltips: true,
@@ -465,13 +471,19 @@ function CodeScreen(props) {
 
   }
 
-  function changeEditorLanguage(name) {
-    switch (name) {
-      case "NodeJS":
+  function changeEditorLanguage(languageCode) {
+    switch (languageCode) {
+      case "nodejs":
         setEditorLanguage("javascript");
         break;
       default:
         setEditorLanguage(null);
+        var oldModel = editorRef.current.getModel();
+        var newModel = monacoRef.current.editor.createModel(oldModel.getValue(), languageCode.replace(/[0-9]/g, ''));
+        editorRef.current.setModel(newModel);
+        if (oldModel) {
+          oldModel.dispose();
+        }
         break;
     }
   }
@@ -484,7 +496,7 @@ function CodeScreen(props) {
       setSelectedVersionIndex(0);
       versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
     }
-    changeEditorLanguage(value);
+    changeEditorLanguage(compilerLanguages.current[index].languageCode);
 
     socket.current?.emit('CHANGE_LANGUAGE', {
       'roomId': roomId,
