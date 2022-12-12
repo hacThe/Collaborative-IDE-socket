@@ -4,8 +4,8 @@ import { Box } from "@mui/system";
 import { useState } from "react";
 
 function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
-    const [cameraOn, setCameraOn] = useState(false);
-    const [micOn, setMicOn] = useState(false);
+    const [cameraOn, setCameraOn] = useState(true);
+    const [micOn, setMicOn] = useState(true);
     const [collapsed, setCollapsed] = useState(false);
 
     function handleOnCamera() {

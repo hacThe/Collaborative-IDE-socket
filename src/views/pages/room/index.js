@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider, Container } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -80,6 +80,8 @@ function CodeScreen(props) {
   const peersRef = useRef([])
   const [peers, setPeers] = useState([])
   const userVideo = useRef(null)
+  const [peerStreams, setPeerStreams] = useState([])
+  const peerStreamsRef = useRef([])
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -246,10 +248,12 @@ function CodeScreen(props) {
           removePeer.peer.destroy()
         }
         var remainPeers = peersRef.current.filter(item => item.peerId !== userId)
-
         peersRef.current = remainPeers
-
         setPeers(remainPeers.map(item => item.peer))
+
+        var remainStreams = peerStreamsRef.current.filter(s => s.peerId !== userId)
+        peerStreamsRef.current = remainStreams
+        setPeerStreams(remainStreams.map(i => i.stream))
       })
 
     })
@@ -284,6 +288,13 @@ function CodeScreen(props) {
       socket.current.emit('SIGNAL_SENT', { userToSignal, callerID, signal })
     })
 
+    peer.on('stream', stream => {
+      peerStreamsRef.current.push({
+        peerId: userToSignal
+        ,stream})
+      setPeerStreams(old => [...old, stream])
+    })
+
     return peer
   }
 
@@ -296,6 +307,11 @@ function CodeScreen(props) {
 
     peer.on('signal', signal => {
       socket.current.emit('SIGNAL_RETURN', { signal, callerID })
+    })
+
+    peer.on('stream', stream => {
+      peerStreamsRef.current.push({peerId: callerID, stream})
+      setPeerStreams(old => [...old, stream])
     })
 
     peer.signal(incomingSignal)
@@ -575,7 +591,9 @@ function CodeScreen(props) {
                 width={communicateBoxWidth - AVATAR_BOX_SPACING}
                 onCollapsed={(collapsed) => {
                   setExpandVoiceTab(!collapsed)
-                }} />
+                }}
+                onCamera={turnOnOffCamera}
+                onMic={turnOnOffMicrophone} />
               <Collapse in={expandVoiceTab}>
                 <div 
                   style={{
@@ -639,7 +657,11 @@ function CodeScreen(props) {
                       {peers.map((p, index) => {
                         var userId = peersRef.current[index].peerId
                         var username = usersRef.current.find(u => u.id === userId).username
-                        return UserAvatarBox({ id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p })
+                        const stream = peerStreams[index]
+
+                        
+
+                        return UserAvatarBox({ stream: stream,  id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p, })
                       })}
                     </Carousel>
                   </Box>
@@ -812,12 +834,36 @@ function CodeScreen(props) {
   //       muted ref={userVideo} autoPlay playsInline
   //     />
   //     {peers.map((peer, index) => {
-  //       return <Video id={`remote ${index}`} key={index} peer={peer} />
+  //       const stream = peerStreams[index]
+
+  //       return <Video id={`remote ${index}`} key={index} peer={peer} stream={stream} />
   //     })}
   //     <Button onClick={turnOnOffCamera}>Turn on/off camera</Button>
   //     <Button onClick={turnOnOffMicrophone}>Turn on/off mic</Button>
   //   </Container>
   // );
 }
+
+// const Video = (props) => {
+//   const [stream, setStream] = useState(null)
+//   const videoRef = useRef(null)
+
+//   useEffect(() => {
+//     console.log(props.stream)
+//     videoRef.current.srcObject = props.stream
+//   }, [props.stream])
+
+//   return (
+//       <video
+//           id={props.id}
+//           style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
+//           height={150}
+//           width={200}
+//           autoPlay
+//           playsInline
+//           ref={videoRef}
+//       />
+//   )
+// }
 
 export default CodeScreen;

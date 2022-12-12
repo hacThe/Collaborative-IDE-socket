@@ -1,33 +1,56 @@
-import { PersonRounded } from "@mui/icons-material";
+import { MicOffRounded, MicRounded, PersonRounded } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const AVATAR_BOX_WIDTH = 200;
 const AVATAR_BOX_HEIGHT = 150;
 
 const Video = (props) => {
-    const ref = useRef()
-
+    const videoRef = useRef(null)
+  
     useEffect(() => {
-        props.peer.on('stream', stream => {
-            ref.current.srcObject = stream
-        })
-    }, [])
-
+      videoRef.current.srcObject = props.stream
+    }, [props.stream])
+  
     return (
         <video
             id={props.id}
-            style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
+            style={{ display: !props.stream ? 'none' : 'inline' , objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
             height={AVATAR_BOX_HEIGHT}
             width={AVATAR_BOX_WIDTH}
             autoPlay
             playsInline
-            ref={ref}
+            ref={videoRef}
         />
     )
 }
 
-function UserAvatarBox({ id, name, color, width, height, peer }) {
+
+const MicrophoneIcon = ({stream}) => {
+    const [micState, setMicState] = useState(false)
+    useEffect(()=>{
+        console.log(JSON.stringify(stream))
+        if (stream) {
+            console.log('ha')
+            var tracks = stream.getAudioTracks()
+            // if (tracks.length !== 0) {
+            //     setMicState(tracks[0].enabled)
+            //     console.log(tracks[0].enabled)
+            // } else {
+            // setMicState(false)
+            // }
+            for (let track in tracks) {
+                console.log(track)
+            }
+        } else {
+            setMicState(false)
+        }
+    }, [stream?.getAudioTracks()])
+
+    return micState ? <MicRounded fontSize="small"/> : <MicOffRounded fontSize="small"/>
+}
+
+const UserAvatarBox = ({id, name, color, width, height, peer, stream}) => {
     return (
         <Box
             key={id}
@@ -42,7 +65,7 @@ function UserAvatarBox({ id, name, color, width, height, peer }) {
                 position: "relative",
                 overflow: "hidden"
             }}>
-            <Video peer={peer} id={id} />
+            <Video peer={peer} id={id} stream={stream} />
             <PersonRounded
                 fontSize="large"
                 sx={{
@@ -60,6 +83,7 @@ function UserAvatarBox({ id, name, color, width, height, peer }) {
                 padding: "3px 6px 0px 6px",
             }}>
                 <Typography variant="caption" color="common.white">{name}</Typography>
+                <MicrophoneIcon stream={stream}/> 
             </Box>
         </Box>
     );
