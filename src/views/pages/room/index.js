@@ -221,19 +221,21 @@ function CodeScreen(props) {
           const peer = createPeer(userId, socket.current.id, stream)
           peersRef.current.push({
             peerId: userId,
-            peer
+            peer,
+            micState: true
           })
-          temptPeers.push(peer)
+          temptPeers.push({ peer, micState: true })
         });
         setPeers(temptPeers)
       })
 
       socket.current.on('ROOM:CONNECTION_MEDIA', ({ signal, callerID }) => {
         const peer = addPeer(signal, callerID, stream)
-        setPeers(users => [...users, peer])
+        setPeers(users => [...users, { peer, micState: true }])
         peersRef.current.push({
           peerId: callerID,
-          peer
+          peer,
+          micState: true
         })
       })
 
@@ -256,6 +258,18 @@ function CodeScreen(props) {
         setPeerStreams(remainStreams.map(i => i.stream))
       })
 
+      socket.current.on('SOMEONE_TOGGLE_MICROPHONE', ({ userId, micState }) => {
+        var peerIndex = peersRef.current.findIndex(p => p.peerId === userId)
+
+        var newList = peersRef.current.map((p, index) => {
+          if (index == peerIndex) {
+            p.micState = micState
+          }
+          return { peer: p.peer, micState: p.micState }
+        })
+        setPeers(newList)
+      })
+
     })
 
     return () => {
@@ -273,6 +287,11 @@ function CodeScreen(props) {
       socket.current.off('CHANGE_LANGUAGE')
       socket.current.off('CHANGE_VERSION')
       socket.current.off('COMPILE_STATE_CHANGED')
+      socket.current.off('ALL_USERS')
+      socket.current.off('ROOM:CONNECTION_MEDIA')
+      socket.current.off('RECEIVE_RETURN_SIGNAL')
+      socket.current.off('ROOM:DISCONNECTION_MEDIA')
+      socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
     };
   }, []);
 
@@ -291,7 +310,8 @@ function CodeScreen(props) {
     peer.on('stream', stream => {
       peerStreamsRef.current.push({
         peerId: userToSignal
-        ,stream})
+        , stream
+      })
       setPeerStreams(old => [...old, stream])
     })
 
@@ -310,7 +330,7 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
-      peerStreamsRef.current.push({peerId: callerID, stream})
+      peerStreamsRef.current.push({ peerId: callerID, stream })
       setPeerStreams(old => [...old, stream])
     })
 
@@ -530,29 +550,24 @@ function CodeScreen(props) {
   }
 
   function turnOnOffCamera() {
-    for (let index in userVideo.current.srcObject.getVideoTracks()) {
-      userVideo.current.srcObject.getVideoTracks()[index].enabled = !userVideo.current.srcObject.getVideoTracks()[index].enabled
-    }
-  }
-
-  function turnOnOffMicrophone() {
-    for (let index in userVideo.current.srcObject.getAudioTracks()) {
-      userVideo.current.srcObject.getAudioTracks()[index].enabled = !userVideo.current.srcObject.getAudioTracks()[index].enabled
-    }
-  }
-
-  function isUserTurnOnCamera() {
-    var tracks = userVideo.current.srcObject.getVideoTracks()
-    if (tracks.length !== 0) {
-      return tracks[0].enabled
+    var track = userVideo.current.srcObject.getVideoTracks()
+    if (track) {
+      userVideo.current.srcObject.getVideoTracks()[0].enabled = !track[0].enabled
+      return userVideo.current.srcObject.getVideoTracks()[0].enabled
     }
     return false
   }
 
-  function isUserTurnOnMicrophone() {
-    var tracks = userVideo.current.srcObject.getAudioTracks()
-    if (tracks.length !== 0) {
-      return tracks[0].enabled
+  function turnOnOffMicrophone() {
+    var track = userVideo.current.srcObject.getAudioTracks()
+    if (track) {
+      userVideo.current.srcObject.getAudioTracks()[0].enabled = !track[0].enabled
+      socket.current.emit('TOGGLE_MICROPHONE', {
+        'userId': socket.current.id,
+        'roomId': roomId,
+        'micState': userVideo.current.srcObject.getAudioTracks()[0].enabled
+      })
+      return userVideo.current.srcObject.getAudioTracks()[0].enabled
     }
     return false
   }
@@ -568,7 +583,7 @@ function CodeScreen(props) {
         </Backdrop>
         <Grid item xs={9}
           ref={editorUIRef}>
-          <Draggable 
+          <Draggable
             handle="#draggableHandler"
             bounds={{
               left: editorBounds?.left,
@@ -595,19 +610,19 @@ function CodeScreen(props) {
                 onCamera={turnOnOffCamera}
                 onMic={turnOnOffMicrophone} />
               <Collapse in={expandVoiceTab}>
-                <div 
+                <div
                   style={{
                     display: "flex",
                     flexDirection: "row",
                   }}>
-                  <MainAvatarBox 
-                    id="userVideo" 
-                    name="You" 
+                  <MainAvatarBox
+                    id="userVideo"
+                    name="You"
                     color={CURSOR_COLOR.default}
                     height={AVATAR_BOX_HEIGHT}
                     width={AVATAR_BOX_WIDTH}
-                    videoRef={userVideo}/>
-                  <Divider 
+                    videoRef={userVideo} />
+                  <Divider
                     sx={{
                       margin: "54px 8px 54px 8px",
                       width: "1px",
@@ -619,7 +634,7 @@ function CodeScreen(props) {
                       display: peers.length > 0 ? "inline" : "none",
                       width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW),
                     }}>
-                      <Carousel
+                    <Carousel
                       sx={{
                         position: "relative",
                       }}
@@ -659,9 +674,7 @@ function CodeScreen(props) {
                         var username = usersRef.current.find(u => u.id === userId).username
                         const stream = peerStreams[index]
 
-                        
-
-                        return UserAvatarBox({ stream: stream,  id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p, })
+                        return UserAvatarBox({ stream: stream, id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState })
                       })}
                     </Carousel>
                   </Box>
@@ -844,26 +857,26 @@ function CodeScreen(props) {
   // );
 }
 
-// const Video = (props) => {
-//   const [stream, setStream] = useState(null)
-//   const videoRef = useRef(null)
+const Video = (props) => {
+  const [stream, setStream] = useState(null)
+  const videoRef = useRef(null)
 
-//   useEffect(() => {
-//     console.log(props.stream)
-//     videoRef.current.srcObject = props.stream
-//   }, [props.stream])
+  useEffect(() => {
+    console.log(props.stream)
+    videoRef.current.srcObject = props.stream
+  }, [props.stream])
 
-//   return (
-//       <video
-//           id={props.id}
-//           style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
-//           height={150}
-//           width={200}
-//           autoPlay
-//           playsInline
-//           ref={videoRef}
-//       />
-//   )
-// }
+  return (
+    <video
+      id={props.id}
+      style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
+      height={150}
+      width={200}
+      autoPlay
+      playsInline
+      ref={videoRef}
+    />
+  )
+}
 
 export default CodeScreen;

@@ -9,19 +9,13 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
     const [collapsed, setCollapsed] = useState(false);
 
     function handleOnCamera() {
-        const newState = !cameraOn
+        let newState = onCamera()
         setCameraOn(newState)
-        if (onCamera) {
-            onCamera(newState)
-        }
     }
 
     function handleOnMic() {
-        const newState = !micOn
+        let newState = onMic()
         setMicOn(newState)
-        if (onMic) {
-            onMic(newState)
-        }
     }
 
     function handleOnCollapsed() {
@@ -45,45 +39,45 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
                 minWidth: "100px",
             }}>
             <IconButton
-                sx = {{ 
+                sx={{
                     marginRight: "4px",
                     height: "24px",
-                    width: "24px" 
+                    width: "24px"
                 }}
                 disabled={true}
-                >
-                <DragIndicatorRounded 
+            >
+                <DragIndicatorRounded
                     fontSize="small"
                 />
             </IconButton>
             <IconButton
-                sx = {{ 
+                sx={{
                     height: "24px",
-                    width: "24px" 
+                    width: "24px"
                 }}
                 onClick={handleOnCamera}
-                >
-                { cameraOn ? <VideocamOffRounded fontSize="small"/> : <VideocamRounded fontSize="small"/> }
+            >
+                {cameraOn ? <VideocamOffRounded fontSize="small" /> : <VideocamRounded fontSize="small" />}
             </IconButton>
             <IconButton
-                sx = {{ 
+                sx={{
                     height: "24px",
-                    width: "24px" 
+                    width: "24px"
                 }}
                 onClick={handleOnMic}
-                >
-                { micOn ? <MicOffRounded fontSize="small"/> : <MicRounded fontSize="small"/> }
+            >
+                {micOn ? <MicOffRounded fontSize="small" /> : <MicRounded fontSize="small" />}
             </IconButton>
-            <Box sx={{ width: "100%"}}>
+            <Box sx={{ width: "100%" }}>
                 <IconButton
-                    sx = {{ 
-                    height: "24px",
-                    width: "24px",  
-                    float: "right"
+                    sx={{
+                        height: "24px",
+                        width: "24px",
+                        float: "right"
                     }}
                     onClick={handleOnCollapsed}
                 >
-                { collapsed ? <KeyboardArrowDownRounded fontSize="small"/> : <KeyboardArrowUpRounded fontSize="small"/>}
+                    {collapsed ? <KeyboardArrowDownRounded fontSize="small" /> : <KeyboardArrowUpRounded fontSize="small" />}
                 </IconButton>
             </Box>
         </Box>
