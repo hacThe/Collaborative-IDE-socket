@@ -19,6 +19,7 @@ import UserAvatarBox from "./components/userAvatarBox";
 import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
 import MainAvatarBox from "./components/mainAvatarBox";
+import BasicTabs from "./components/tabBar";
 
 
 
@@ -212,6 +213,11 @@ function CodeScreen(props) {
 
     socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
 
+    socket.current.on('CHAT_MESSAGE', ({ senderId, message }) => {
+      // show lên UI
+      console.log(`recieve message ${message} from user ${senderId}`)
+    })
+
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
       userVideo.current.srcObject = stream
       socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
@@ -292,8 +298,18 @@ function CodeScreen(props) {
       socket.current.off('RECEIVE_RETURN_SIGNAL')
       socket.current.off('ROOM:DISCONNECTION_MEDIA')
       socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
+      socket.current.off('CHAT_MESSAGE')
     };
   }, []);
+
+  function sendChatMessage(message) {
+    // show message lên UI
+    socket.current.emit('CHAT_MESSAGE', {
+      'senderId': socket.current.id,
+      roomId,
+      message,
+    })
+  }
 
   function createPeer(userToSignal, callerID, stream) {
     console.log('function create peer')
@@ -572,6 +588,113 @@ function CodeScreen(props) {
     return false
   }
 
+  const infoTab = () => {
+    return <>
+      <Box>
+        <h3>
+          Username: <strong>{username}</strong>
+        </h3>
+        <h3>
+          Room Id: <strong>{roomId}</strong>{" "}
+          <span
+            style={{ display: "inline-block" }}
+            onClick={() => {
+              navigator.clipboard.writeText(roomId);
+            }}
+            className="icon right"
+          >
+            <img
+              src="http://clipground.com/images/copy-4.png"
+              title="Click to Copy"
+              alt="Copy room id"
+            />
+          </span>
+        </h3>
+        <h3>
+          Room members: <strong> {users.length}</strong>
+        </h3>
+      </Box>
+
+      <Autocomplete
+        disableClearable
+        id="compiler-language"
+        options={languageList}
+        sx={{
+          marginTop: "12px",
+          ".MuiOutlinedInput-root": {
+            borderColor: "white",
+            borderWidth: 10,
+          },
+        }}
+        onChange={handleOnLanguageChange}
+        value={languageList[selectedLanguageIndex] ?? ""}
+        renderInput={(params) => (
+          <TextField {...params} label="Languages" />
+        )}
+      />
+
+      <Autocomplete
+        disableClearable
+        id="compiler-language-version"
+        options={versionList.current}
+        sx={{ marginTop: "12px" }}
+        onChange={handleOnLanguageVersionChange}
+        value={versionList.current[selectedVersionIndex] ?? ""}
+        renderInput={(params) => (
+          <TextField {...params} label="Language versions" />
+        )}
+      />
+
+      {/* <Box sx={{ marginTop: "12px" }}>
+  <Button
+    variant="contained"
+    fullWidth={true}
+    size="small"
+    onClick={handleRunCompiler}>
+    Save compiler language
+  </Button>
+</Box> */}
+      <Box sx={{ marginTop: "24px" }}>
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth={true}
+          onClick={handleRunCompiler}
+        >
+          Run
+        </Button>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          marginTop: "24px",
+        }}
+      >
+        {/* <Box sx={{ flex: 1 }}>
+    <h4>Input</h4>
+    <textarea></textarea>
+  </Box> */}
+
+        <Box sx={{ flex: 1 }}>
+          <h4>Output</h4>
+          <Box
+            className={
+              output === "" ? "result-banner" : "active-result-banner"
+            }
+            sx={{ overflow: "auto", height: "32vh" }}
+          >
+            <p>{output === "" ? "This is result banner" : output}</p>
+          </Box>
+        </Box>
+      </Box>
+    </>
+  }
+
+  const messageTab = () => {
+    return <></>
+  }
+
   return (
     <>
       <Grid container>
@@ -710,173 +833,15 @@ function CodeScreen(props) {
               overflow: "auto",
             }}
           >
-            <Box>
-              <h3>
-                Username: <strong>{username}</strong>
-              </h3>
-              <h3>
-                Room Id: <strong>{roomId}</strong>{" "}
-                <span
-                  style={{ display: "inline-block" }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(roomId);
-                  }}
-                  className="icon right"
-                >
-                  <img
-                    src="http://clipground.com/images/copy-4.png"
-                    title="Click to Copy"
-                    alt="Copy room id"
-                  />
-                </span>
-              </h3>
-              <h3>
-                Room members: <strong> {users.length}</strong>
-              </h3>
-            </Box>
+            <BasicTabs labels={['Info', 'Message']} components={[
+              infoTab(), messageTab()
+            ]} />
 
-            <Autocomplete
-              disableClearable
-              id="compiler-language"
-              options={languageList}
-              sx={{
-                marginTop: "12px",
-                ".MuiOutlinedInput-root": {
-                  borderColor: "white",
-                  borderWidth: 10,
-                },
-              }}
-              onChange={handleOnLanguageChange}
-              value={languageList[selectedLanguageIndex] ?? ""}
-              renderInput={(params) => (
-                <TextField {...params} label="Languages" />
-              )}
-            />
-
-            <Autocomplete
-              disableClearable
-              id="compiler-language-version"
-              options={versionList.current}
-              sx={{ marginTop: "12px" }}
-              onChange={handleOnLanguageVersionChange}
-              value={versionList.current[selectedVersionIndex] ?? ""}
-              renderInput={(params) => (
-                <TextField {...params} label="Language versions" />
-              )}
-            />
-
-            {/* <Box sx={{ marginTop: "12px" }}>
-              <Button
-                variant="contained"
-                fullWidth={true}
-                size="small"
-                onClick={handleRunCompiler}>
-                Save compiler language
-              </Button>
-            </Box> */}
-            <Box sx={{ marginTop: "24px" }}>
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth={true}
-                onClick={handleRunCompiler}
-              >
-                Run
-              </Button>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                marginTop: "24px",
-              }}
-            >
-              {/* <Box sx={{ flex: 1 }}>
-                <h4>Input</h4>
-                <textarea></textarea>
-              </Box> */}
-
-              <Box sx={{ flex: 1 }}>
-                <h4>Output</h4>
-                <Box
-                  className={
-                    output === "" ? "result-banner" : "active-result-banner"
-                  }
-                  sx={{ overflow: "auto", height: "32vh" }}
-                >
-                  <p>{output === "" ? "This is result banner" : output}</p>
-                </Box>
-              </Box>
-            </Box>
           </Box>
         </Grid>
       </Grid>
     </>
   );
-
-
-  // return (
-  //   <Container
-  //     padding='20px'
-  //     display='flex'
-  //     height='100vh'
-  //     width='90%'
-  //     margin='auto'
-  //     flex-wrap='wrap'
-  //   >
-  //     <h3>
-  //       Room Id: <strong>{roomId}</strong>{" "}
-  //       <span
-  //         style={{ display: "inline-block" }}
-  //         onClick={() => {
-  //           navigator.clipboard.writeText(roomId);
-  //         }}
-  //         className="icon right"
-  //       >
-  //         <img
-  //           src="http://clipground.com/images/copy-4.png"
-  //           title="Click to Copy"
-  //           alt="Copy room id"
-  //         />
-  //       </span>
-  //     </h3>
-  //     <video
-  //       id="userVideo"
-  //       height='40%'
-  //       width='50%'
-  //       muted ref={userVideo} autoPlay playsInline
-  //     />
-  //     {peers.map((peer, index) => {
-  //       const stream = peerStreams[index]
-
-  //       return <Video id={`remote ${index}`} key={index} peer={peer} stream={stream} />
-  //     })}
-  //     <Button onClick={turnOnOffCamera}>Turn on/off camera</Button>
-  //     <Button onClick={turnOnOffMicrophone}>Turn on/off mic</Button>
-  //   </Container>
-  // );
-}
-
-const Video = (props) => {
-  const [stream, setStream] = useState(null)
-  const videoRef = useRef(null)
-
-  useEffect(() => {
-    console.log(props.stream)
-    videoRef.current.srcObject = props.stream
-  }, [props.stream])
-
-  return (
-    <video
-      id={props.id}
-      style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
-      height={150}
-      width={200}
-      autoPlay
-      playsInline
-      ref={videoRef}
-    />
-  )
 }
 
 export default CodeScreen;
