@@ -20,9 +20,8 @@ import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
 import MainAvatarBox from "./components/mainAvatarBox";
 import BasicTabs from "./components/tabBar";
-
-
-
+import "react-chat-elements/dist/main.css"
+import { MessageList, Input } from 'react-chat-elements';
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -97,6 +96,8 @@ function CodeScreen(props) {
   const [communicateBoxHeight, setCommunicateBoxHeight] = useState(null)
 
   const [expandVoiceTab, setExpandVoiceTab] = useState(true)
+  const inputRef = useRef(null)
+  const [messageList, setMessageList] = useState([])
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -213,9 +214,10 @@ function CodeScreen(props) {
 
     socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
 
-    socket.current.on('CHAT_MESSAGE', ({ senderId, message }) => {
+    socket.current.on('CHAT_MESSAGE', ({ senderName, message }) => {
       // show lên UI
-      console.log(`recieve message ${message} from user ${senderId}`)
+      console.log(`${senderName} and ${message}`)
+      addMessage(senderName, message, false)
     })
 
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
@@ -268,7 +270,7 @@ function CodeScreen(props) {
         var peerIndex = peersRef.current.findIndex(p => p.peerId === userId)
 
         var newList = peersRef.current.map((p, index) => {
-          if (index == peerIndex) {
+          if (index === peerIndex) {
             p.micState = micState
           }
           return { peer: p.peer, micState: p.micState }
@@ -302,13 +304,14 @@ function CodeScreen(props) {
     };
   }, []);
 
-  function sendChatMessage(message) {
-    // show message lên UI
+  function sendChatMessage() {
+    addMessage(username, inputRef.current.value, true)
     socket.current.emit('CHAT_MESSAGE', {
-      'senderId': socket.current.id,
+      'username': username,
       roomId,
-      message,
+      'message': inputRef.current.value
     })
+    inputRef.current.value = ''
   }
 
   function createPeer(userToSignal, callerID, stream) {
@@ -588,6 +591,17 @@ function CodeScreen(props) {
     return false
   }
 
+
+  function addMessage(senderName, message, isRight) {
+    var messageEntity = {
+      position: isRight ? "right" : 'left',
+      type: "text",
+      title: senderName,
+      text: message,
+    }
+    setMessageList(oldArray => [...oldArray, messageEntity])
+  }
+
   const infoTab = () => {
     return <>
       <Box>
@@ -692,7 +706,33 @@ function CodeScreen(props) {
   }
 
   const messageTab = () => {
-    return <></>
+    return (
+      <>
+        <div style={{ height: '100vh' }}>
+          <MessageList
+            className='message-list'
+            lockable={false}
+            toBottomHeight={'100%'}
+            downButton={true}
+            downButtonBadge={10}
+            sendMessagePreview={true}
+            messageBoxStyles={{ backgroundColor: 'black', color: 'white', minHeight: '80px' }}
+            dataSource={[
+              ...messageList
+            ]}
+          />
+          <Input
+            placeholder="Type here..."
+            referance={inputRef}
+            rightButtons={<Button
+              style={{ backgroundColor: 'black', height: '100%', color: 'white' }}
+              onClick={() => {
+                sendChatMessage()
+              }}>Submit</Button>}
+          />
+        </div>
+
+      </>)
   }
 
   return (
@@ -826,7 +866,7 @@ function CodeScreen(props) {
           <Box
             sx={{
               background: "#1e1e1e",
-              padding: "24px",
+              // padding: "24px",
               height: "100vh",
               display: "flex",
               flexDirection: "column",
