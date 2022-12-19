@@ -22,6 +22,7 @@ import MainAvatarBox from "./components/mainAvatarBox";
 import BasicTabs from "./components/tabBar";
 import "react-chat-elements/dist/main.css"
 import { MessageList, Input } from 'react-chat-elements';
+import SendIcon from '@mui/icons-material/Send';
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -305,6 +306,8 @@ function CodeScreen(props) {
   }, []);
 
   function sendChatMessage() {
+    if (inputRef.current.value === '') return
+
     addMessage(username, inputRef.current.value, true)
     socket.current.emit('CHAT_MESSAGE', {
       'username': username,
@@ -709,7 +712,7 @@ function CodeScreen(props) {
   const messageTab = () => {
     return (
       <>
-        <div style={{ height: '85vh' }}>
+        <div style={{ height: '80vh' }}>
           <MessageList
             className='message-list'
             lockable={false}
@@ -723,15 +726,26 @@ function CodeScreen(props) {
               ...messageList
             ]}
           />
-          <Input
-            placeholder="Type here..."
-            referance={inputRef}
-            rightButtons={<Button
-              style={{ backgroundColor: 'black', height: '100%', color: 'white', borderRadius: '8px' }}
-              onClick={() => {
-                sendChatMessage()
-              }}>Submit</Button>}
-          />
+          <Grid container spacing={1} style={{ padding: '8px' }}>
+            <Grid item xs={10}>
+              <Input
+                placeholder="Type here..."
+                referance={inputRef}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    sendChatMessage()
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <IconButton
+                style={{ backgroundColor: 'black', height: '100%', color: 'white', borderRadius: '8px' }}
+                onClick={() => {
+                  sendChatMessage()
+                }}><SendIcon /></IconButton>
+            </Grid>
+          </Grid>
         </div>
 
       </>)
