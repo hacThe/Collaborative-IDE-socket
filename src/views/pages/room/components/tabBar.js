@@ -2,8 +2,10 @@ import * as React from 'react';
 import PropTypes from 'prop-types';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import InfoIcon from '@mui/icons-material/Info';
+import MessageIcon from '@mui/icons-material/Message';
+import { color } from '@mui/system';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -38,6 +40,7 @@ function a11yProps(index) {
 
 export default function BasicTabs({ components, labels }) {
     const [value, setValue] = React.useState(0);
+    const icons = [<InfoIcon />, <MessageIcon />]
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -46,24 +49,19 @@ export default function BasicTabs({ components, labels }) {
     return (
         <Box sx={{ width: '100%' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+                <Tabs value={value} color={'rgb(247, 235, 3)'} onChange={handleChange} aria-label="basic tabs example" centered TabIndicatorProps={{
+                    style: {
+                        backgroundColor: "rgb(247, 235, 3)"
+                    }
+                }}>
                     {labels.map((item, index) => {
-                        return <Tab label={item} key={index} {...a11yProps(index)} />
+                        return <Tab icon={icons[index]} key={index} {...a11yProps(index)} />
                     })}
                 </Tabs>
             </Box>
             {components.map((item, index) => {
                 return <TabPanel children={item} value={value} index={index} key={index} />
             })}
-            {/* <TabPanel value={value} index={0}>
-                Item One
-            </TabPanel>
-            <TabPanel value={value} index={1}>
-                Item Two
-            </TabPanel>
-            <TabPanel value={value} index={2}>
-                Item Three
-            </TabPanel> */}
         </Box>
     );
 }

@@ -104,18 +104,42 @@ svg {
 }
 
 .message-list {
-  height: 80%;
+  height: 100%;
   width: 100%;
 }
 
 .rce-input {
   border: none;
-  border-radius: 5px;
   box-sizing: border-box;
   color: #333 !important;
   flex: 1 1;
   font-size: 14px;
   height: 40px;
   outline: none;
-  padding: 0 5px;
+  padding: 0 12px;
+}
+
+.rce-container-input {
+  align-items: center;
+  background: #fff;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  min-width: 100%;
+  border-radius: 5px;
+}
+
+.rce-mbox-text:after {
+  content: "" !important;
+}
+
+.rce-mbox {
+  min-width: unset !important;
+  background: #302c2c !important;
+  color: white;
+}
+
+.rce-mbox.rce-mbox-right {
+  background: #1976d2 !important;
+  color: white;
 }

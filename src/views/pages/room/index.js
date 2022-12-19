@@ -596,8 +596,9 @@ function CodeScreen(props) {
     var messageEntity = {
       position: isRight ? "right" : 'left',
       type: "text",
-      title: senderName,
+      title: isRight ? null : senderName,
       text: message,
+      titleColor: 'yellow'
     }
     setMessageList(oldArray => [...oldArray, messageEntity])
   }
@@ -708,15 +709,16 @@ function CodeScreen(props) {
   const messageTab = () => {
     return (
       <>
-        <div style={{ height: '100vh' }}>
+        <div style={{ height: '85vh' }}>
           <MessageList
             className='message-list'
             lockable={false}
             toBottomHeight={'100%'}
             downButton={true}
+            notchStyle={{ display: 'none' }}
             downButtonBadge={10}
             sendMessagePreview={true}
-            messageBoxStyles={{ backgroundColor: 'black', color: 'white', minHeight: '80px' }}
+            messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '5px' }}
             dataSource={[
               ...messageList
             ]}
@@ -725,7 +727,7 @@ function CodeScreen(props) {
             placeholder="Type here..."
             referance={inputRef}
             rightButtons={<Button
-              style={{ backgroundColor: 'black', height: '100%', color: 'white' }}
+              style={{ backgroundColor: 'black', height: '100%', color: 'white', borderRadius: '8px' }}
               onClick={() => {
                 sendChatMessage()
               }}>Submit</Button>}
