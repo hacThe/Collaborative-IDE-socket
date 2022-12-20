@@ -143,3 +143,7 @@ svg {
   background: #1976d2 !important;
   color: white;
 }
+
+.rce-container-mbox {
+  margin: 8px 0px;
+}

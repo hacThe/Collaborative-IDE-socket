@@ -216,9 +216,21 @@ function CodeScreen(props) {
     socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
 
     socket.current.on('CHAT_MESSAGE', ({ senderName, message }) => {
-      // show lên UI
-      console.log(`${senderName} and ${message}`)
       addMessage(senderName, message, false)
+    })
+
+    socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
+      roomMessages = roomMessages.map((e, index) => {
+        return {
+          position: 'left',
+          type: "text",
+          title: e.username,
+          text: e.message,
+          titleColor: 'yellow'
+        }
+      })
+
+      setMessageList(roomMessages)
     })
 
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
