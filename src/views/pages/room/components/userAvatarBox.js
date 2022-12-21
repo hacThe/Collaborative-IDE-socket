@@ -1,6 +1,6 @@
 import { MicOffRounded, MicRounded, PersonRounded } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 const AVATAR_BOX_WIDTH = 200;
 const AVATAR_BOX_HEIGHT = 150;
@@ -35,7 +35,7 @@ const MicrophoneIcon = ({ micState }) => {
 
 }
 
-const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState }) => {
+const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState, camState }) => {
     return (
         <Box
             key={id}
@@ -50,7 +50,7 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState 
                 position: "relative",
                 overflow: "hidden"
             }}>
-            <Video peer={peer} id={id} stream={stream} />
+            {camState === true && <Video peer={peer} id={id} stream={stream} />}
             <PersonRounded
                 fontSize="large"
                 sx={{

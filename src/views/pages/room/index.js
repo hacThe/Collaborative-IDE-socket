@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider, Container } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -83,6 +83,7 @@ function CodeScreen(props) {
   const userVideo = useRef(null)
   const [peerStreams, setPeerStreams] = useState([])
   const peerStreamsRef = useRef([])
+  const localStream = useRef(null)
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -234,7 +235,9 @@ function CodeScreen(props) {
     })
 
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
+      console.log(stream)
       userVideo.current.srcObject = stream
+      localStream.current = stream
       socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
       socket.current.on('ALL_USERS', (users) => {
         const temptPeers = []
@@ -243,20 +246,22 @@ function CodeScreen(props) {
           peersRef.current.push({
             peerId: userId,
             peer,
-            micState: true
+            micState: true,
+            camState: true
           })
-          temptPeers.push({ peer, micState: true })
+          temptPeers.push({ peer, micState: true, camState: true })
         });
         setPeers(temptPeers)
       })
 
       socket.current.on('ROOM:CONNECTION_MEDIA', ({ signal, callerID }) => {
         const peer = addPeer(signal, callerID, stream)
-        setPeers(users => [...users, { peer, micState: true }])
+        setPeers(users => [...users, { peer, micState: true, camState: true }])
         peersRef.current.push({
           peerId: callerID,
           peer,
-          micState: true
+          micState: true,
+          camState: true
         })
       })
 
@@ -286,7 +291,19 @@ function CodeScreen(props) {
           if (index === peerIndex) {
             p.micState = micState
           }
-          return { peer: p.peer, micState: p.micState }
+          return { peer: p.peer, micState: p.micState, camState: p.camState }
+        })
+        setPeers(newList)
+      })
+
+      socket.current.on('SOMEONE_TOGGLE_CAMERA', ({ userId, camState }) => {
+        var peerIndex = peersRef.current.findIndex(p => p.peerId === userId)
+
+        var newList = peersRef.current.map((p, index) => {
+          if (index === peerIndex) {
+            p.camState = camState
+          }
+          return { peer: p.peer, micState: p.micState, camState: p.camState }
         })
         setPeers(newList)
       })
@@ -313,6 +330,7 @@ function CodeScreen(props) {
       socket.current.off('RECEIVE_RETURN_SIGNAL')
       socket.current.off('ROOM:DISCONNECTION_MEDIA')
       socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
+      socket.current.off('SOMEONE_TOGGLE_CAMERA')
       socket.current.off('CHAT_MESSAGE')
     };
   }, []);
@@ -342,11 +360,17 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
+      console.log(stream)
       peerStreamsRef.current.push({
         peerId: userToSignal
         , stream
       })
       setPeerStreams(old => [...old, stream])
+    })
+
+    peer.on('track', (track, stream) => {
+      console.log(track)
+      console.log(stream.getTracks())
     })
 
     return peer
@@ -364,8 +388,26 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
+      console.log(stream)
+
       peerStreamsRef.current.push({ peerId: callerID, stream })
       setPeerStreams(old => [...old, stream])
+    })
+
+    peer.on('track', (track, stream) => {
+      console.log("============== event track inside addPeer function =================")
+      console.log('track')
+      console.log(track)
+
+      console.log('stream')
+      console.log(stream)
+
+      console.log('stream track')
+      console.log(stream.getTracks())
+
+      console.log('peerStreamRef')
+      console.log(peerStreamsRef.current)
+      console.log("===============================")
     })
 
     peer.signal(incomingSignal)
@@ -584,24 +626,55 @@ function CodeScreen(props) {
   }
 
   function turnOnOffCamera() {
-    var track = userVideo.current.srcObject.getVideoTracks()
-    if (track) {
-      userVideo.current.srcObject.getVideoTracks()[0].enabled = !track[0].enabled
-      return userVideo.current.srcObject.getVideoTracks()[0].enabled
+    if (userVideo.current.srcObject !== null) {
+      localStream.current.getVideoTracks()[0].stop()
+      userVideo.current.srcObject = null
+      socket.current.emit('TOGGLE_CAMERA', ({
+        'userId': socket.current.id,
+        'roomId': roomId,
+        'camState': false
+      }))
+
+      return false
+    } else {
+      navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
+        userVideo.current.srcObject = stream
+
+        if (localStream.current.getAudioTracks()[0].enabled === false) {
+          stream.getAudioTracks()[0].enabled = false
+        }
+
+        localStream.current = stream
+        peersRef.current.forEach((peerInfo, index) => {
+          let currentStream = peerInfo.peer.streams[0]
+          let oldVideoTrack = currentStream.getVideoTracks()[0]
+          let oldAudioTrack = currentStream.getAudioTracks()[0]
+          let newVideoTrack = stream.getVideoTracks()[0]
+          let newAudioTrack = stream.getAudioTracks()[0]
+          peerInfo.peer.replaceTrack(oldVideoTrack, newVideoTrack, currentStream)
+          peerInfo.peer.replaceTrack(oldAudioTrack, newAudioTrack, currentStream)
+        })
+
+        socket.current.emit('TOGGLE_CAMERA', ({
+          'userId': socket.current.id,
+          'roomId': roomId,
+          'camState': true
+        }))
+      })
+      return true
     }
-    return false
   }
 
   function turnOnOffMicrophone() {
-    var track = userVideo.current.srcObject.getAudioTracks()
+    var track = localStream.current.getAudioTracks()
     if (track) {
-      userVideo.current.srcObject.getAudioTracks()[0].enabled = !track[0].enabled
+      localStream.current.getAudioTracks()[0].enabled = !track[0].enabled
       socket.current.emit('TOGGLE_MICROPHONE', {
         'userId': socket.current.id,
         'roomId': roomId,
-        'micState': userVideo.current.srcObject.getAudioTracks()[0].enabled
+        'micState': localStream.current.getAudioTracks()[0].enabled
       })
-      return userVideo.current.srcObject.getAudioTracks()[0].enabled
+      return localStream.current.getAudioTracks()[0].enabled
     }
     return false
   }
@@ -865,7 +938,12 @@ function CodeScreen(props) {
                         var username = usersRef.current.find(u => u.id === userId).username
                         const stream = peerStreams[index]
 
-                        return UserAvatarBox({ stream: stream, id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState })
+                        console.log('render UI')
+                        if (stream) {
+                          console.log(stream.getTracks())
+                        }
+
+                        return UserAvatarBox({ stream: stream, id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
                       })}
                     </Carousel>
                   </Box>
