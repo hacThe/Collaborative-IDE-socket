@@ -13,7 +13,6 @@ function TabPanel(props) {
     return (
         <div
             role="tabpanel"
-            style={{ padding: '10px' }}
             hidden={value !== index}
             id={`simple-tabpanel-${index}`}
             aria-labelledby={`simple-tab-${index}`}
@@ -49,14 +48,14 @@ export default function BasicTabs({ components, labels }) {
 
     return (
         <Box sx={{ width: '100%' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ borderBottom: 1, borderColor: '#2e2e2e' }}>
                 <Tabs value={value} color={'rgb(247, 235, 3)'} onChange={handleChange} aria-label="basic tabs example" centered TabIndicatorProps={{
                     style: {
                         backgroundColor: "rgb(247, 235, 3)"
                     }
                 }}>
                     {labels.map((item, index) => {
-                        return <Tab icon={icons[index]} key={index} {...a11yProps(index)} />
+                        return <Tab sx={{ width: '50%' }} icon={icons[index]} key={index} {...a11yProps(index)} />
                     })}
                 </Tabs>
             </Box>

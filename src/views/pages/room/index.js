@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider, autocompleteClasses } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -693,101 +693,103 @@ function CodeScreen(props) {
 
   const infoTab = () => {
     return <>
-      <Box>
-        <h3>
-          Username: <strong>{username}</strong>
-        </h3>
-        <h3>
-          Room Id: <strong>{roomId}</strong>{" "}
-          <span
-            style={{ display: "inline-block" }}
-            onClick={() => {
-              navigator.clipboard.writeText(roomId);
-            }}
-            className="icon right"
-          >
-            <img
-              src="http://clipground.com/images/copy-4.png"
-              title="Click to Copy"
-              alt="Copy room id"
-            />
-          </span>
-        </h3>
-        <h3>
-          Room members: <strong> {users.length}</strong>
-        </h3>
-      </Box>
+      <Box sx={{ marginTop: "16px", marginLeft: "18px", marginRight: "22px" }}>
+        <Box>
+          <h3>
+            Username: <strong>{username}</strong>
+          </h3>
+          <h3>
+            Room Id: <strong>{roomId}</strong>{" "}
+            <span
+              style={{ display: "inline-block" }}
+              onClick={() => {
+                navigator.clipboard.writeText(roomId);
+              }}
+              className="icon right"
+            >
+              <img
+                src="http://clipground.com/images/copy-4.png"
+                title="Click to Copy"
+                alt="Copy room id"
+              />
+            </span>
+          </h3>
+          <h3>
+            Room members: <strong> {users.length}</strong>
+          </h3>
+        </Box>
 
-      <Autocomplete
-        disableClearable
-        id="compiler-language"
-        options={languageList}
-        sx={{
-          marginTop: "12px",
-          ".MuiOutlinedInput-root": {
-            borderColor: "white",
-            borderWidth: 10,
-          },
-        }}
-        onChange={handleOnLanguageChange}
-        value={languageList[selectedLanguageIndex] ?? ""}
-        renderInput={(params) => (
-          <TextField {...params} label="Languages" />
-        )}
-      />
+        <Autocomplete
+          disableClearable
+          id="compiler-language"
+          options={languageList}
+          sx={{
+            marginTop: "36px",
+            ".MuiOutlinedInput-root": {
+              borderColor: "white",
+              borderWidth: 10,
+            },
+          }}
+          onChange={handleOnLanguageChange}
+          value={languageList[selectedLanguageIndex] ?? ""}
+          renderInput={(params) => (
+            <TextField {...params} label="Languages" />
+          )}
+        />
 
-      <Autocomplete
-        disableClearable
-        id="compiler-language-version"
-        options={versionList.current}
-        sx={{ marginTop: "12px" }}
-        onChange={handleOnLanguageVersionChange}
-        value={versionList.current[selectedVersionIndex] ?? ""}
-        renderInput={(params) => (
-          <TextField {...params} label="Language versions" />
-        )}
-      />
+        <Autocomplete
+          disableClearable
+          id="compiler-language-version"
+          options={versionList.current}
+          sx={{ marginTop: "12px" }}
+          onChange={handleOnLanguageVersionChange}
+          value={versionList.current[selectedVersionIndex] ?? ""}
+          renderInput={(params) => (
+            <TextField {...params} label="Language versions" />
+          )}
+        />
 
-      {/* <Box sx={{ marginTop: "12px" }}>
-  <Button
-    variant="contained"
-    fullWidth={true}
-    size="small"
-    onClick={handleRunCompiler}>
-    Save compiler language
-  </Button>
-</Box> */}
-      <Box sx={{ marginTop: "24px" }}>
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth={true}
-          onClick={handleRunCompiler}
-        >
-          Run
-        </Button>
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          marginTop: "24px",
-        }}
-      >
-        {/* <Box sx={{ flex: 1 }}>
-    <h4>Input</h4>
-    <textarea></textarea>
+        {/* <Box sx={{ marginTop: "12px" }}>
+    <Button
+      variant="contained"
+      fullWidth={true}
+      size="small"
+      onClick={handleRunCompiler}>
+      Save compiler language
+    </Button>
   </Box> */}
-
-        <Box sx={{ flex: 1 }}>
-          <h4>Output</h4>
-          <Box
-            className={
-              output === "" ? "result-banner" : "active-result-banner"
-            }
-            sx={{ overflow: "auto", height: "32vh" }}
+        <Box sx={{ marginTop: "12px" }}>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth={true}
+            onClick={handleRunCompiler}
           >
-            <p>{output === "" ? "This is result banner" : output}</p>
+            Run
+          </Button>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            marginTop: "36px",
+          }}
+        >
+          {/* <Box sx={{ flex: 1 }}>
+      <h4>Input</h4>
+      <textarea></textarea>
+    </Box> */}
+
+          <Box sx={{ flex: 1 }}>
+            <h3>Output</h3>
+            <Box
+              className={
+                output === "" ? "result-banner" : "active-result-banner"
+              }
+              sx={{ overflow: "auto", height: "32vh" }}
+            >
+              <p>{output === "" ? "This is result banner" : output}</p>
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -797,8 +799,8 @@ function CodeScreen(props) {
   const messageTab = () => {
     return (
       <>
-        <div style={{ height: '80vh' }}>
-          <MessageList
+        <Box>
+          <MessageList 
             className='message-list'
             lockable={false}
             toBottomHeight={'100%'}
@@ -806,12 +808,12 @@ function CodeScreen(props) {
             notchStyle={{ display: 'none' }}
             downButtonBadge={10}
             sendMessagePreview={true}
-            messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '5px' }}
+            messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '0px 8px 0px 10px', }}
             dataSource={[
               ...messageList
             ]}
           />
-          <Grid container spacing={1} style={{ padding: '8px' }}>
+          <Grid container spacing={1} sx={{ padding: "0px 4px 4px 4px" }}>
             <Grid item xs={10}>
               <Input
                 placeholder="Type here..."
@@ -824,14 +826,16 @@ function CodeScreen(props) {
               />
             </Grid>
             <Grid item xs={2}>
-              <IconButton
-                style={{ backgroundColor: 'black', height: '100%', color: 'white', borderRadius: '8px' }}
-                onClick={() => {
-                  sendChatMessage()
-                }}><SendIcon /></IconButton>
+                <Button
+                  style={{ backgroundColor: '#1976d2', height: '100%', color: 'white', borderRadius: '8px', minWidth: 'unset' }}
+                  onClick={() => {
+                    sendChatMessage()
+                  }}>
+                <SendIcon/>
+              </Button>
             </Grid>
           </Grid>
-        </div>
+        </Box>
 
       </>)
   }
@@ -972,7 +976,6 @@ function CodeScreen(props) {
           <Box
             sx={{
               background: "#1e1e1e",
-              // padding: "24px",
               height: "100vh",
               display: "flex",
               flexDirection: "column",

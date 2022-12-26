@@ -91,7 +91,7 @@ input {
 }
 
 .MuiAutocomplete-input {
-  color: rgb(247, 235, 3) !important;
+  color: white !important;
 }
 
 svg {
@@ -104,7 +104,8 @@ svg {
 }
 
 .message-list {
-  height: 100%;
+  overflow: auto;
+  height: 85vh;
   width: 100%;
 }
 
@@ -116,7 +117,7 @@ svg {
   font-size: 14px;
   height: 40px;
   outline: none;
-  padding: 0 12px;
+  padding: 0 12px !important;
 }
 
 .rce-container-input {
@@ -146,4 +147,23 @@ svg {
 
 .rce-container-mbox {
   margin: 8px 0px;
+}
+
+::-webkit-scrollbar {
+  width: 20px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d6dee1;
+  border-radius: 20px;
+  border: 6px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a8bbbf;
 }
