@@ -37,14 +37,16 @@ const copyRightTemplate = `/*
 
 const CURSOR_COLOR = {
   list: [
-    "#FF0000",
-    "#FFC0CB",
-    "#FFA500",
-    "#FFFF00",
-    "#800080",
-    "#008000",
-    "#0000FF",
-    "#A52A2A",
+    "#355FFA",
+    "#0ac285",
+    "#F85212",
+    "#bf4545",
+    "#e599a6",
+    "#a28144",
+    "#e08300",
+    "#A545EE",
+    "#6565cd",
+    '#669999',
   ],
   default: "#808080",
 };
@@ -190,6 +192,8 @@ function CodeScreen(props) {
       setUsers(data.users);
       usersRef.current = data.users;
       addUserCursor(data.newUserId);
+
+      console.log('event room:connection')
     });
 
     socket.current.on("ROOM:DISCONNECT", (userId) => {
@@ -221,13 +225,14 @@ function CodeScreen(props) {
     })
 
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
+      const colorIndex = Math.floor(Math.random() * CURSOR_COLOR.list.length);
       roomMessages = roomMessages.map((e, index) => {
         return {
           position: 'left',
           type: "text",
           title: e.username,
           text: e.message,
-          titleColor: 'yellow'
+          titleColor: CURSOR_COLOR.list[colorIndex]
         }
       })
 
@@ -465,9 +470,11 @@ function CodeScreen(props) {
 
 
   function addInitialCursors() {
+    console.log('start run function addInitialCuros')
     const users = usersRef.current;
 
     for (let i in users) {
+      console.log('run here => user not empty')
       let user = users[users.length - i - 1];
 
       var cursorColor;
@@ -479,6 +486,7 @@ function CodeScreen(props) {
       }
 
       if (user.id !== socket.current?.id) {
+        console.log('run here => socket is not duplicate')
         remoteCursorManager.addCursor(user.id, cursorColor, user.username);
         remoteSelectionManager.addSelection(
           user.id,
@@ -490,6 +498,8 @@ function CodeScreen(props) {
   }
 
   function handleOnMount(editor, monaco) {
+    console.log('start function handleOnMount')
+
     editorRef.current = editor;
     monacoRef.current = monaco;
 
@@ -544,6 +554,8 @@ function CodeScreen(props) {
 
       socket.current?.emit("SELECTION_CHANGED", { roomId, selectionData });
     });
+
+    console.log('finish function handleOnMount')
   }
 
   const handleOnchange = debounce((value) => {
@@ -681,12 +693,13 @@ function CodeScreen(props) {
 
 
   function addMessage(senderName, message, isRight) {
+    const colorIndex = Math.floor(Math.random() * CURSOR_COLOR.list.length);
     var messageEntity = {
       position: isRight ? "right" : 'left',
       type: "text",
       title: isRight ? null : senderName,
       text: message,
-      titleColor: 'yellow'
+      titleColor: CURSOR_COLOR.list[colorIndex]
     }
     setMessageList(oldArray => [...oldArray, messageEntity])
   }
@@ -919,24 +932,6 @@ function CodeScreen(props) {
                       )}
                       slidesToShow={peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW}
                       scrollMode="remainder">
-                      {/* <UserAvatarBox 
-                        color="#A545EE" 
-                        name="Trương Kim Lâm"
-                        width={AVATAR_BOX_WIDTH}
-                        height={AVATAR_BOX_HEIGHT}
-                        />
-                      <UserAvatarBox 
-                        color="#F85212" 
-                        name="Trần Lê Thanh Tùng"
-                        width={AVATAR_BOX_WIDTH}
-                        height={AVATAR_BOX_HEIGHT}
-                        />
-                      <UserAvatarBox 
-                        color="#355FFA" 
-                        name="Dương Hiển Thế"
-                        width={AVATAR_BOX_WIDTH}
-                        height={AVATAR_BOX_HEIGHT}
-                        /> */}
                       {peers.map((p, index) => {
                         var userId = peersRef.current[index].peerId
                         var username = usersRef.current.find(u => u.id === userId).username
