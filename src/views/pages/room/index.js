@@ -86,6 +86,7 @@ function CodeScreen(props) {
   var remoteSelectionManager = null;
   var contentManager = null;
   var socket = useRef(null)
+  var isSetInitial = false
 
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
@@ -172,6 +173,8 @@ function CodeScreen(props) {
       transports: ["websocket"],
     });
 
+    console.log('socket is available')
+
     socket.current.on("CODE_INSERT", (data) => {
       contentManager.insert(data.index, data.text);
     });
@@ -209,13 +212,19 @@ function CodeScreen(props) {
     });
 
     socket.current.on("connect", () => {
-      socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
+      // socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
     });
 
     socket.current.on("ROOM:CONNECTION", (data) => {
       setUsers(data.users);
       usersRef.current = data.users;
-      addUserCursor(data.newUserId);
+      
+      if (!isSetInitial) {
+        addInitialCursors()
+        isSetInitial = true
+      } else {
+        addUserCursor(data.newUserId);
+      }
       console.log('event room:connection')
     });
 
@@ -562,7 +571,7 @@ function CodeScreen(props) {
       },
     });
 
-    addInitialCursors();
+    // addInitialCursors();
 
     editor.onDidChangeCursorPosition((e) => {
       const offset = editor.getModel().getOffsetAt(e.position);
@@ -588,6 +597,7 @@ function CodeScreen(props) {
     });
 
     console.log('finish function handleOnMount')
+    socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
   }
 
   const handleOnchange = debounce((value) => {
