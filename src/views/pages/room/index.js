@@ -90,7 +90,7 @@ function CodeScreen(props) {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
 
-  const usersRef = useRef(null);
+  const usersRef = useRef([]);
   const { roomId } = useParams();
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -216,7 +216,6 @@ function CodeScreen(props) {
       setUsers(data.users);
       usersRef.current = data.users;
       addUserCursor(data.newUserId);
-
       console.log('event room:connection')
     });
 
@@ -225,7 +224,6 @@ function CodeScreen(props) {
       setUsers(users);
       removeUserCursor(userId);
       usersRef.current = users;
-      // remove peer
     });
 
     socket.current.on('CHANGE_LANGUAGE', (newLanguage) => {
@@ -263,8 +261,41 @@ function CodeScreen(props) {
       setMessageList(roomMessages)
     })
 
+
+    return () => {
+      socket.current.off("CODE_INSERT");
+      socket.current.off("CODE_REPLACE");
+      socket.current.off("CODE_DELETE");
+      socket.current.off("CURSOR_CHANGED");
+      socket.current.off("SELECTION_CHANGED");
+      socket.current.off("CODE_CHANGED");
+      socket.current.off("OUTPUT_CHANGED");
+      socket.current.off("connect_error");
+      socket.current.off("connect");
+      socket.current.off("ROOM:CONNECTION");
+      socket.current.off("ROOM:DISCONNECT");
+      socket.current.off('CHANGE_LANGUAGE')
+      socket.current.off('CHANGE_VERSION')
+      socket.current.off('COMPILE_STATE_CHANGED')
+      socket.current.off('ALL_USERS')
+      socket.current.off('ROOM:CONNECTION_MEDIA')
+      socket.current.off('RECEIVE_RETURN_SIGNAL')
+      socket.current.off('ROOM:DISCONNECTION_MEDIA')
+      socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
+      socket.current.off('SOMEONE_TOGGLE_CAMERA')
+      socket.current.off('CHAT_MESSAGE')
+    };
+  }, []);
+
+  useEffect(() => {
+    initUserMedia()
+  }, [])
+
+  function initUserMedia() {
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
-      console.log(stream)
+      // console.log('init media with current stream')
+      // console.log(stream)
+
       userVideo.current.srcObject = stream
       localStream.current = stream
       socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
@@ -338,31 +369,7 @@ function CodeScreen(props) {
       })
 
     })
-
-    return () => {
-      socket.current.off("CODE_INSERT");
-      socket.current.off("CODE_REPLACE");
-      socket.current.off("CODE_DELETE");
-      socket.current.off("CURSOR_CHANGED");
-      socket.current.off("SELECTION_CHANGED");
-      socket.current.off("CODE_CHANGED");
-      socket.current.off("OUTPUT_CHANGED");
-      socket.current.off("connect_error");
-      socket.current.off("connect");
-      socket.current.off("ROOM:CONNECTION");
-      socket.current.off("ROOM:DISCONNECT");
-      socket.current.off('CHANGE_LANGUAGE')
-      socket.current.off('CHANGE_VERSION')
-      socket.current.off('COMPILE_STATE_CHANGED')
-      socket.current.off('ALL_USERS')
-      socket.current.off('ROOM:CONNECTION_MEDIA')
-      socket.current.off('RECEIVE_RETURN_SIGNAL')
-      socket.current.off('ROOM:DISCONNECTION_MEDIA')
-      socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
-      socket.current.off('SOMEONE_TOGGLE_CAMERA')
-      socket.current.off('CHAT_MESSAGE')
-    };
-  }, []);
+  }
 
   function sendChatMessage() {
     if (inputRef.current.value === '') return
@@ -377,7 +384,6 @@ function CodeScreen(props) {
   }
 
   function createPeer(userToSignal, callerID, stream) {
-    console.log('function create peer')
     const peer = new SimplePeer({
       initiator: true,
       trickle: false,
@@ -390,7 +396,9 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
-      console.log(stream)
+      // console.log('peer receive stream')
+      // console.log(stream)
+
       peerStreamsRef.current.push({
         peerId: userToSignal
         , stream
@@ -419,27 +427,25 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
-      console.log(stream)
-
       peerStreamsRef.current.push({ peerId: callerID, stream })
       setPeerStreams(old => [...old, stream])
     })
 
-    peer.on('track', (track, stream) => {
-      console.log("============== event track inside addPeer function =================")
-      console.log('track')
-      console.log(track)
+    // peer.on('track', (track, stream) => {
+    //   console.log("============== event track inside addPeer function =================")
+    //   console.log('track')
+    //   console.log(track)
 
-      console.log('stream')
-      console.log(stream)
+    //   console.log('stream')
+    //   console.log(stream)
 
-      console.log('stream track')
-      console.log(stream.getTracks())
+    //   console.log('stream track')
+    //   console.log(stream.getTracks())
 
-      console.log('peerStreamRef')
-      console.log(peerStreamsRef.current)
-      console.log("===============================")
-    })
+    //   console.log('peerStreamRef')
+    //   console.log(peerStreamsRef.current)
+    //   console.log("===============================")
+    // })
 
     peer.signal(incomingSignal)
     return peer
@@ -676,6 +682,9 @@ function CodeScreen(props) {
       return false
     } else {
       navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
+        console.log('user turn off camera and create new stream')
+        console.log(stream)
+
         userVideo.current.srcObject = stream
 
         if (localStream.current.getAudioTracks()[0].enabled === false) {
@@ -960,7 +969,7 @@ function CodeScreen(props) {
                       scrollMode="remainder">
                       {peers.map((p, index) => {
                         var userId = peersRef.current[index].peerId
-                        var username = usersRef.current.find(u => u.id === userId).username
+                        var user = usersRef.current.find(u => u.id === userId)
                         const stream = peerStreams[index]
 
                         console.log('render UI')
@@ -968,7 +977,7 @@ function CodeScreen(props) {
                           console.log(stream.getTracks())
                         }
 
-                        return UserAvatarBox({ stream: stream, id: userId, name: username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
+                        return user !== undefined && UserAvatarBox({ stream: stream, id: userId, name: user.username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
                       })}
                     </Carousel>
                   </Box>
