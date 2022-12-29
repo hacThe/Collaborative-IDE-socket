@@ -11,7 +11,8 @@ function MainAvatarBox({ id, name, color, width, height, videoRef }) {
                 height: height,
                 width: width,
                 borderRadius: 2,
-                border: 1,
+                outline: "2px solid",
+                outlineOffset: "-1px",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"

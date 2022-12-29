@@ -911,7 +911,6 @@ function CodeScreen(props) {
                 position: "absolute",
                 minWidth: "150px",
                 zIndex: 1,
-                boxShadow: 1,
               }}>
               <UserActionBar
                 id="draggableHandler"

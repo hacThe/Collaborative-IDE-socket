@@ -31,7 +31,6 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
             sx={{
                 background: "#121212",
                 marginBottom: "8px",
-                boxShadow: 2,
                 padding: "4px",
                 display: "flex",
                 width: width,
