@@ -75,6 +75,8 @@ const CURSOR_COLOR = {
   default: "#808080",
 };
 
+const USER_DEFAULT_COLOR = "#808080";
+
 const videoConstraint = {
   height: window.innerHeight / 2,
   width: window.innerWidth / 2
@@ -129,6 +131,7 @@ function CodeScreen(props) {
   const [messageList, setMessageList] = useState([])
 
   const [userColors, setUserColors] = useState({})
+  const userColorsRef = useRef({})
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -221,6 +224,7 @@ function CodeScreen(props) {
       setUsers(data.users);
       usersRef.current = data.users;
       setUserColors(data.userColors)
+      userColorsRef.current = data.userColors
 
       if (!isSetInitial) {
         addInitialCursors(data.userColors)
@@ -259,14 +263,15 @@ function CodeScreen(props) {
     })
 
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
-      const colorIndex = Math.floor(Math.random() * CURSOR_COLOR.list.length);
       roomMessages = roomMessages.map((e, index) => {
+      const userId = usersRef.current.find(item => item.username === e.username).id
+      console.log(userColorsRef.current[userId])
         return {
           position: 'left',
           type: "text",
           title: e.username,
           text: e.message,
-          titleColor: CURSOR_COLOR.list[colorIndex]
+          titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR
         }
       })
 
@@ -468,13 +473,6 @@ function CodeScreen(props) {
     if (remoteCursorManager && remoteSelectionManager) {
       remoteCursorManager.removeCursor(oldUserId);
       remoteSelectionManager.removeSelection(oldUserId);
-
-      const oldUserIndex = users.findIndex((item) => item.id === oldUserId);
-      if (oldUserIndex > -1 && oldUserIndex < CURSOR_COLOR.list.length) {
-        const oldCursorColor = CURSOR_COLOR.list[oldUserIndex];
-        CURSOR_COLOR.list.splice(oldUserIndex, 1)
-        CURSOR_COLOR.list.push(oldCursorColor);
-      }
     }
   }
 
@@ -726,13 +724,13 @@ function CodeScreen(props) {
 
 
   function addMessage(senderName, message, isRight) {
-    const colorIndex = Math.floor(Math.random() * CURSOR_COLOR.list.length);
+    const userId = usersRef.current.find(item => item.username === senderName).id
     var messageEntity = {
       position: isRight ? "right" : 'left',
       type: "text",
       title: isRight ? null : senderName,
       text: message,
-      titleColor: CURSOR_COLOR.list[colorIndex]
+      titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR
     }
     setMessageList(oldArray => [...oldArray, messageEntity])
   }
@@ -932,7 +930,7 @@ function CodeScreen(props) {
                   <MainAvatarBox
                     id="userVideo"
                     name="You"
-                    color={CURSOR_COLOR.default}
+                    color={!socket.current ? USER_DEFAULT_COLOR : userColors[socket.current.id]}
                     height={AVATAR_BOX_HEIGHT}
                     width={AVATAR_BOX_WIDTH}
                     videoRef={userVideo} />
@@ -975,7 +973,7 @@ function CodeScreen(props) {
                           console.log(stream.getTracks())
                         }
 
-                        return user !== undefined && UserAvatarBox({ stream: stream, id: userId, name: user.username, color: CURSOR_COLOR.default, width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
+                        return user !== undefined && UserAvatarBox({ stream: stream, id: userId, name: user.username, color: userColors[userId], width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
                       })}
                     </Carousel>
                   </Box>
