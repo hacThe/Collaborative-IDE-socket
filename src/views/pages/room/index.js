@@ -23,6 +23,7 @@ import BasicTabs from "./components/tabBar";
 import "react-chat-elements/dist/main.css"
 import { MessageList, Input } from 'react-chat-elements';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
+import hark from "hark";
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -113,6 +114,7 @@ function CodeScreen(props) {
   const [peerStreams, setPeerStreams] = useState([])
   const peerStreamsRef = useRef([])
   const localStream = useRef(null)
+  const [speakingUsers, setSpeakingUsers] = useState([])
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -282,6 +284,10 @@ function CodeScreen(props) {
       setMessageList(roomMessages)
     })
 
+    socket.current.on('LISTEN_TO_SPEAKER', ({ userId, isSpeaking }) => {
+
+    })
+
 
     return () => {
       socket.current.off("CODE_INSERT");
@@ -315,11 +321,22 @@ function CodeScreen(props) {
 
   function initUserMedia() {
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
-      // console.log('init media with current stream')
-      // console.log(stream)
 
       userVideo.current.srcObject = stream
       localStream.current = stream
+
+      var speechEvent = hark(localStream.current, {})
+
+      speechEvent.on('speaking', () => {
+        setSpeakingUsers(old => [...old, socket.current.id])
+        socket.current.emit('LISTEN_TO_SPEAKER', { roomId, isSpeaking: true })
+      })
+
+      speechEvent.on('stopped_speaking', () => {
+        setSpeakingUsers(speakingUsers.filter(id => id !== socket.current.id))
+        socket.current.emit('LISTEN_TO_SPEAKER', { roomId, isSpeaking: false })
+      })
+
       socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
       socket.current.on('ALL_USERS', (users) => {
         const temptPeers = []
@@ -934,6 +951,7 @@ function CodeScreen(props) {
                   <MainAvatarBox
                     id="userVideo"
                     name="You"
+                    isSpeaking={!socket.current ? false : speakingUsers.includes(socket.current.id)}
                     color={!socket.current ? USER_DEFAULT_COLOR : userColors[socket.current.id]}
                     height={AVATAR_BOX_HEIGHT}
                     width={AVATAR_BOX_WIDTH}

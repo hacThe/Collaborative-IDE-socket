@@ -1,7 +1,7 @@
 import { PersonRounded } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
 
-function MainAvatarBox({ id, name, color, width, height, videoRef }) {
+function MainAvatarBox({ id, isSpeaking, name, color, width, height, videoRef }) {
     return (
         <Box
             key={id}
@@ -13,6 +13,7 @@ function MainAvatarBox({ id, name, color, width, height, videoRef }) {
                 borderRadius: 2,
                 outline: "2px solid",
                 outlineOffset: "-1px",
+                outlineColor: isSpeaking ? "#669999" : "#000000",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
