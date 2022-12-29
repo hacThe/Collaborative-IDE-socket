@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import InfoIcon from '@mui/icons-material/Info';
 import MessageIcon from '@mui/icons-material/Message';
 import { color } from '@mui/system';
+import { Badge } from '@mui/material';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -38,29 +39,34 @@ function a11yProps(index) {
     };
 }
 
-export default function BasicTabs({ components, labels }) {
-    const [value, setValue] = React.useState(0);
+export default function BasicTabs({ tabIndexRef, components, labels, dotState, setDotState }) {
     const icons = [<InfoIcon />, <MessageIcon />]
-
+    const [tabIndex, setTabIndex] = React.useState(0)
     const handleChange = (event, newValue) => {
-        setValue(newValue);
+        if (newValue === 1) {
+            setDotState(true)
+        }
+        setTabIndex(newValue)
+        tabIndexRef.current = newValue
     };
 
     return (
         <Box sx={{ width: '100%' }}>
             <Box sx={{ borderBottom: 1, borderColor: '#2e2e2e' }}>
-                <Tabs value={value} color={'rgb(247, 235, 3)'} onChange={handleChange} aria-label="basic tabs example" centered TabIndicatorProps={{
+                <Tabs value={tabIndex} color={'rgb(247, 235, 3)'} onChange={handleChange} aria-label="basic tabs example" centered TabIndicatorProps={{
                     style: {
                         backgroundColor: "rgb(247, 235, 3)"
                     }
                 }}>
                     {labels.map((item, index) => {
-                        return <Tab sx={{ width: '50%' }} icon={icons[index]} key={index} {...a11yProps(index)} />
+                        var icon = index === 1 ? <Badge invisible={dotState} variant='dot' color='info'> {icons[index]} </Badge> : icons[index]
+
+                        return <Tab sx={{ width: '50%' }} icon={icon} key={index} {...a11yProps(index)} />
                     })}
                 </Tabs>
             </Box>
             {components.map((item, index) => {
-                return <TabPanel children={item} value={value} index={index} key={index} />
+                return <TabPanel children={item} value={tabIndex} index={index} key={index} />
             })}
         </Box>
     );

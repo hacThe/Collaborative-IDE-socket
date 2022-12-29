@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider, autocompleteClasses } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -128,10 +128,13 @@ function CodeScreen(props) {
 
   const [expandVoiceTab, setExpandVoiceTab] = useState(true)
   const inputRef = useRef(null)
-  const [messageList, setMessageList] = useState([])
 
   const [userColors, setUserColors] = useState({})
   const userColorsRef = useRef({})
+
+  const [messageList, setMessageList] = useState([])
+  const [isDotInvisible, setDotInvisible] = useState(true)
+  const tabIndexRef = useRef(0)
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -260,12 +263,13 @@ function CodeScreen(props) {
 
     socket.current.on('CHAT_MESSAGE', ({ senderName, message }) => {
       addMessage(senderName, message, false)
+      tabIndexRef.current === 1 ? setDotInvisible(true) : setDotInvisible(false)
     })
 
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
       roomMessages = roomMessages.map((e, index) => {
-      const userId = usersRef.current.find(item => item.username === e.username).id
-      console.log(userColorsRef.current[userId])
+        const userId = usersRef.current.find(item => item.username === e.username).id
+        console.log(userColorsRef.current[userId])
         return {
           position: 'left',
           type: "text",
@@ -301,6 +305,7 @@ function CodeScreen(props) {
       socket.current.off('SOMEONE_TOGGLE_MICROPHONE')
       socket.current.off('SOMEONE_TOGGLE_CAMERA')
       socket.current.off('CHAT_MESSAGE')
+      socket.current.off('LOAD_ROOM_MESSAGES')
     };
   }, []);
 
@@ -1007,9 +1012,9 @@ function CodeScreen(props) {
               overflow: "auto",
             }}
           >
-            <BasicTabs labels={['Info', 'Message']} components={[
+            <BasicTabs tabIndexRef={tabIndexRef} labels={['Info', 'Message']} components={[
               infoTab(), messageTab()
-            ]} />
+            ]} dotState={isDotInvisible} setDotState={setDotInvisible} />
 
           </Box>
         </Grid>
