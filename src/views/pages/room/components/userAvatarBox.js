@@ -28,9 +28,9 @@ const Video = (props) => {
 
 const MicrophoneIcon = ({ micState }) => {
     if (micState) {
-        return <MicRounded fontSize="small" />
+        return <MicRounded sx={{ paddingLeft: "2px", fontSize: "18px", verticalAlign: "baseline" }} />
     } else {
-        return <MicOffRounded fontSize="small" />
+        return <MicOffRounded sx={{ paddingLeft: "2px", fontSize: "18px", verticalAlign: "baseline" }} />
     }
 
 }
@@ -66,7 +66,7 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState,
                 borderRadius: 1,
                 left: 8,
                 bottom: 8,
-                padding: "3px 6px 0px 6px",
+                padding: "3px 3px 0px 6px",
             }}>
                 <Typography variant="caption" color="common.white">{name}</Typography>
                 <MicrophoneIcon micState={micState} />
