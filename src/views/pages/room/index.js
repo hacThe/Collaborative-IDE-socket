@@ -128,6 +128,8 @@ function CodeScreen(props) {
   const inputRef = useRef(null)
   const [messageList, setMessageList] = useState([])
 
+  const [userColors, setUserColors] = useState({})
+
   useEffect(() => {
     if (!editorUIRef.current) return;
 
@@ -169,7 +171,7 @@ function CodeScreen(props) {
   }, [])
 
   useEffect(() => {
-    socket.current = io("https://colaborative-ide-socket.onrender.com", {
+    socket.current = io("http://localhost:3001", {
       transports: ["websocket"],
     });
 
@@ -218,12 +220,13 @@ function CodeScreen(props) {
     socket.current.on("ROOM:CONNECTION", (data) => {
       setUsers(data.users);
       usersRef.current = data.users;
-      
+      setUserColors(data.userColors)
+
       if (!isSetInitial) {
-        addInitialCursors()
+        addInitialCursors(data.userColors)
         isSetInitial = true
       } else {
-        addUserCursor(data.newUserId);
+        addUserCursor(data.newUserId, data.userColors[data.newUserId]);
       }
       console.log('event room:connection')
     });
@@ -475,19 +478,11 @@ function CodeScreen(props) {
     }
   }
 
-  function addUserCursor(newUserId) {
+  function addUserCursor(newUserId, cursorColor) {
     const users = usersRef.current;
     if (remoteCursorManager && remoteSelectionManager) {
       const newUserIndex = users.findIndex((item) => item.id === newUserId);
       const newUser = users[newUserIndex];
-
-      var cursorColor;
-      if (newUserIndex < CURSOR_COLOR.list.length) {
-        cursorColor = CURSOR_COLOR.list.pop()
-        CURSOR_COLOR.list.unshift(cursorColor)
-      } else {
-        cursorColor = CURSOR_COLOR.default
-      }
 
       if (newUserId !== socket.current.id) {
         remoteCursorManager.addCursor(
@@ -510,7 +505,7 @@ function CodeScreen(props) {
 
 
 
-  function addInitialCursors() {
+  function addInitialCursors(userColors) {
     console.log('start run function addInitialCuros')
     const users = usersRef.current;
 
@@ -518,15 +513,8 @@ function CodeScreen(props) {
       console.log('run here => user not empty')
       let user = users[users.length - i - 1];
 
-      var cursorColor;
-      if (i < CURSOR_COLOR.list.length) {
-        cursorColor = CURSOR_COLOR.list.pop()
-        CURSOR_COLOR.list.unshift(cursorColor)
-      } else {
-        cursorColor = CURSOR_COLOR.default
-      }
-
       if (user.id !== socket.current?.id) {
+        const cursorColor = userColors[user.id]
         console.log('run here => socket is not duplicate')
         remoteCursorManager.addCursor(user.id, cursorColor, user.username);
         remoteSelectionManager.addSelection(
