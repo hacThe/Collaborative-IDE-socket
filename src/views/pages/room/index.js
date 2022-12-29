@@ -129,8 +129,8 @@ function CodeScreen(props) {
   const [communicateBoxWidth, setCommunicateBoxWidth] = useState(null)
   const [communicateBoxHeight, setCommunicateBoxHeight] = useState(null)
 
-  const communicateBoxPositionRef = useRef({x: 0, y: 0})
-  const [communicateBoxPosition, setCommunicateBoxPosition] = useState({x: 0, y: 0})
+  const communicateBoxPositionRef = useRef({ x: 0, y: 0 })
+  const [communicateBoxPosition, setCommunicateBoxPosition] = useState({ x: 0, y: 0 })
 
   const [expandVoiceTab, setExpandVoiceTab] = useState(true)
   const inputRef = useRef(null)
@@ -150,10 +150,10 @@ function CodeScreen(props) {
       const lastPosition = communicateBoxPositionRef.current
       const communicateBoxSize = communicateBoxRef.current
       setEditorBounds(editorBounds)
-      const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right 
-                    ? editorBounds.right - communicateBoxSize.clientWidth : lastPosition.x
-      const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom 
-                    ? editorBounds.bottom - communicateBoxSize.clientHeight : lastPosition.y;
+      const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right
+        ? editorBounds.right - communicateBoxSize.clientWidth : lastPosition.x
+      const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom
+        ? editorBounds.bottom - communicateBoxSize.clientHeight : lastPosition.y;
       setCommunicateBoxPosition({
         x: newX,
         y: newY
@@ -337,7 +337,7 @@ function CodeScreen(props) {
   useEffect(() => {
     initUserMedia()
   }, [])
-  
+
   useEffect(() => {
     scrollMessageListToBottom()
   }, [messageList])
@@ -894,7 +894,7 @@ function CodeScreen(props) {
     return (
       <>
         <Box sx={{ marginTop: "4px" }}>
-          <MessageList 
+          <MessageList
             className='message-list'
             lockable={false}
             toBottomHeight={'100%'}
@@ -920,12 +920,12 @@ function CodeScreen(props) {
               />
             </Grid>
             <Grid item xs={2}>
-                <Button
-                  style={{ backgroundColor: '#1976d2', width: '100%', height: '100%', color: 'white', borderRadius: '5px', minWidth: 'unset' }}
-                  onClick={() => {
-                    sendChatMessage()
-                  }}>
-                <SendRoundedIcon fontSize="small"/>
+              <Button
+                style={{ backgroundColor: '#1976d2', width: '100%', height: '100%', color: 'white', borderRadius: '5px', minWidth: 'unset' }}
+                onClick={() => {
+                  sendChatMessage()
+                }}>
+                <SendRoundedIcon fontSize="small" />
               </Button>
             </Grid>
           </Grid>
@@ -933,7 +933,7 @@ function CodeScreen(props) {
 
       </>)
   }
-  
+
   function handleDragCallingBox(e, ui) {
     const position = {
       x: ui.lastX + ui.deltaX,
@@ -963,7 +963,7 @@ function CodeScreen(props) {
           ref={editorUIRef}>
           <Draggable
             handle="#draggableHandler"
-            defaultPosition={{x: 0, y: 0}}
+            defaultPosition={{ x: 0, y: 0 }}
             position={communicateBoxPosition}
             onDrag={handleDragCallingBox}
             bounds={{
