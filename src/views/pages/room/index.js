@@ -22,7 +22,7 @@ import MainAvatarBox from "./components/mainAvatarBox";
 import BasicTabs from "./components/tabBar";
 import "react-chat-elements/dist/main.css"
 import { MessageList, Input } from 'react-chat-elements';
-import SendIcon from '@mui/icons-material/Send';
+import SendRoundedIcon from '@mui/icons-material/SendRounded';
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -843,7 +843,7 @@ function CodeScreen(props) {
   const messageTab = () => {
     return (
       <>
-        <Box>
+        <Box sx={{ marginTop: "4px" }}>
           <MessageList 
             className='message-list'
             lockable={false}
@@ -857,10 +857,10 @@ function CodeScreen(props) {
               ...messageList
             ]}
           />
-          <Grid container spacing={1} sx={{ padding: "0px 4px 4px 4px" }}>
+          <Grid container spacing={1} sx={{ padding: "0px 8px 4px 10px" }}>
             <Grid item xs={10}>
               <Input
-                placeholder="Type here..."
+                placeholder="Type here to send message..."
                 referance={inputRef}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -871,11 +871,11 @@ function CodeScreen(props) {
             </Grid>
             <Grid item xs={2}>
                 <Button
-                  style={{ backgroundColor: '#1976d2', height: '100%', color: 'white', borderRadius: '8px', minWidth: 'unset' }}
+                  style={{ backgroundColor: '#1976d2', width: '100%', height: '100%', color: 'white', borderRadius: '5px', minWidth: 'unset' }}
                   onClick={() => {
                     sendChatMessage()
                   }}>
-                <SendIcon/>
+                <SendRoundedIcon fontSize="small"/>
               </Button>
             </Grid>
           </Grid>
