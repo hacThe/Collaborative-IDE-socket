@@ -975,6 +975,7 @@ function CodeScreen(props) {
                     <Carousel
                       sx={{
                         position: "relative",
+                        overflow: "visible"
                       }}
                       renderBottomCenterControls="null"
                       renderCenterLeftControls={({ previousDisabled, previousSlide }) => (

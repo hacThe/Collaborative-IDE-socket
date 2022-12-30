@@ -11,9 +11,10 @@ function MainAvatarBox({ id, isSpeaking, name, color, width, height, videoRef })
                 height: height,
                 width: width,
                 borderRadius: 2,
-                outline: "2px solid",
-                outlineOffset: "-1px",
-                outlineColor: isSpeaking ? "#669999" : "#000000",
+                outline: isSpeaking ? "3.5px" : "2px",
+                outlineStyle: "solid",
+                outlineOffset: isSpeaking ? "0px" : "-1px",
+                outlineColor: isSpeaking ? "#1976d2" : "#1b1b1b",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"

@@ -150,6 +150,10 @@ svg {
   margin: 8px 0px;
 }
 
+.slider-frame {
+  overflow: visible !important;
+}
+
 ::-webkit-scrollbar {
   width: 20px;
 }
