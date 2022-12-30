@@ -81,13 +81,15 @@ input {
   white-space: pre-wrap;
 }
 
-.compiler-language-version {
-  color: white;
+#compiler-language-version,
+#compiler-language {
+  font-family: 'Roboto Mono' !important;
 }
 
 #compiler-language-version-label,
 #compiler-language-label {
   color: #ccc;
+  font-family: 'Roboto Mono' !important;
 }
 
 .MuiAutocomplete-input {

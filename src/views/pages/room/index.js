@@ -811,7 +811,7 @@ function CodeScreen(props) {
           disableClearable
           id="compiler-language-version"
           options={versionList.current}
-          sx={{ marginTop: "12px" }}
+          sx={{ marginTop: "16px" }}
           onChange={handleOnLanguageVersionChange}
           value={versionList.current[selectedVersionIndex] ?? ""}
           renderInput={(params) => (
@@ -830,6 +830,9 @@ function CodeScreen(props) {
   </Box> */}
         <Box sx={{ marginTop: "12px" }}>
           <Button
+            sx={{
+              fontFamily: "Roboto Mono",
+            }}
             variant="contained"
             color="primary"
             fullWidth={true}
