@@ -7,6 +7,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import MessageIcon from '@mui/icons-material/Message';
 import { color } from '@mui/system';
 import { Badge } from '@mui/material';
+import scrollMessageListToBottom from '../utility';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -49,6 +50,12 @@ export default function BasicTabs({ tabIndexRef, components, labels, dotState, s
         setTabIndex(newValue)
         tabIndexRef.current = newValue
     };
+
+    React.useEffect(() => {
+        if (tabIndex === 1) {
+            scrollMessageListToBottom()
+        }
+    }, [tabIndex])
 
     return (
         <Box sx={{ width: '100%' }}>

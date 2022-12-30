@@ -24,6 +24,7 @@ import "react-chat-elements/dist/main.css"
 import { MessageList, Input } from 'react-chat-elements';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import hark from "hark";
+import scrollMessageListToBottom from "./utility";
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -322,6 +323,10 @@ function CodeScreen(props) {
   useEffect(() => {
     initUserMedia()
   }, [])
+  
+  useEffect(() => {
+    scrollMessageListToBottom()
+  }, [messageList])
 
   function initUserMedia() {
     navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
