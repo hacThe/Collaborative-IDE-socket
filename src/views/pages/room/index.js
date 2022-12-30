@@ -285,7 +285,11 @@ function CodeScreen(props) {
     })
 
     socket.current.on('LISTEN_TO_SPEAKER', ({ userId, isSpeaking }) => {
-
+      if (isSpeaking) {
+        setSpeakingUsers(old => [...old, userId])
+      } else {
+        setSpeakingUsers(speakingUsers.filter(id => id !== userId))
+      }
     })
 
 
@@ -989,13 +993,9 @@ function CodeScreen(props) {
                         var userId = peersRef.current[index].peerId
                         var user = usersRef.current.find(u => u.id === userId)
                         const stream = peerStreams[index]
+                        const isSpeaking = speakingUsers.includes(userId)
 
-                        console.log('render UI')
-                        if (stream) {
-                          console.log(stream.getTracks())
-                        }
-
-                        return user !== undefined && UserAvatarBox({ stream: stream, id: userId, name: user.username, color: userColors[userId], width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState })
+                        return user !== undefined && UserAvatarBox({ stream: stream, id: userId, name: user.username, color: userColors[userId], width: AVATAR_BOX_WIDTH, height: AVATAR_BOX_HEIGHT, peer: p.peer, micState: p.micState, camState: p.camState, isSpeaking: isSpeaking })
                       })}
                     </Carousel>
                   </Box>

@@ -35,7 +35,7 @@ const MicrophoneIcon = ({ micState }) => {
 
 }
 
-const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState, camState }) => {
+const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState, camState, isSpeaking }) => {
     return (
         <Box
             key={id}
@@ -47,6 +47,7 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState,
                 borderRadius: 2,
                 outline: "2px solid",
                 outlineOffset: "-1px",
+                outlineColor: isSpeaking ? "#669999" : "#000000",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
