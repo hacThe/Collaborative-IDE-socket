@@ -129,6 +129,9 @@ function CodeScreen(props) {
   const [communicateBoxWidth, setCommunicateBoxWidth] = useState(null)
   const [communicateBoxHeight, setCommunicateBoxHeight] = useState(null)
 
+  const communicateBoxPositionRef = useRef({x: 0, y: 0})
+  const [communicateBoxPosition, setCommunicateBoxPosition] = useState({x: 0, y: 0})
+
   const [expandVoiceTab, setExpandVoiceTab] = useState(true)
   const inputRef = useRef(null)
 
@@ -143,7 +146,18 @@ function CodeScreen(props) {
     if (!editorUIRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
-      setEditorBounds(editorUIRef.current.getBoundingClientRect())
+      const editorBounds = editorUIRef.current.getBoundingClientRect()
+      const lastPosition = communicateBoxPositionRef.current
+      const communicateBoxSize = communicateBoxRef.current
+      setEditorBounds(editorBounds)
+      const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right 
+                    ? editorBounds.right - communicateBoxSize.clientWidth : lastPosition.x
+      const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom 
+                    ? editorBounds.bottom - communicateBoxSize.clientHeight : lastPosition.y;
+      setCommunicateBoxPosition({
+        x: newX,
+        y: newY
+      })
     });
 
     resizeObserver.observe(editorUIRef.current);
@@ -615,6 +629,8 @@ function CodeScreen(props) {
 
     console.log('finish function handleOnMount')
     socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
+
+    setDefaultCallingBarPosition()
   }
 
   const handleOnchange = debounce((value) => {
@@ -917,6 +933,23 @@ function CodeScreen(props) {
 
       </>)
   }
+  
+  function handleDragCallingBox(e, ui) {
+    const position = {
+      x: ui.lastX + ui.deltaX,
+      y: ui.lastY + ui.deltaY
+    }
+    setCommunicateBoxPosition(position)
+    communicateBoxPositionRef.current = position
+  };
+
+  function setDefaultCallingBarPosition() {
+    console.log(editorBounds?.bottom - communicateBoxHeight)
+    setCommunicateBoxPosition({
+      x: 0,
+      y: (editorBounds?.bottom - communicateBoxHeight) ?? 0
+    })
+  }
 
   return (
     <>
@@ -931,6 +964,9 @@ function CodeScreen(props) {
           ref={editorUIRef}>
           <Draggable
             handle="#draggableHandler"
+            defaultPosition={{x: 0, y: 0}}
+            position={communicateBoxPosition}
+            onDrag={handleDragCallingBox}
             bounds={{
               left: editorBounds?.left,
               top: editorBounds?.top,
