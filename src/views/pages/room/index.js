@@ -195,7 +195,7 @@ function CodeScreen(props) {
 
   useEffect(() => {
     socket.current = io("http://localhost:3001", {
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
     });
 
     console.log('socket is available')
@@ -363,21 +363,21 @@ function CodeScreen(props) {
       socket.current.emit('CONNECTED_TO_ROOM_MEDIA', { roomId })
       socket.current.on('ALL_USERS', (users) => {
         const temptPeers = []
-        users.forEach(userId => {
-          const peer = createPeer(userId, socket.current.id, stream)
+        users.forEach(user => {
+          const peer = createPeer(user.id, socket.current.id, localStream.current)
           peersRef.current.push({
-            peerId: userId,
+            peerId: user.id,
             peer,
-            micState: true,
-            camState: true
+            micState: user.micState,
+            camState: user.camState,
           })
-          temptPeers.push({ peer, micState: true, camState: true })
+          temptPeers.push({ peer, micState: user.micState, camState: user.camState })
         });
         setPeers(temptPeers)
       })
 
       socket.current.on('ROOM:CONNECTION_MEDIA', ({ signal, callerID }) => {
-        const peer = addPeer(signal, callerID, stream)
+        const peer = addPeer(signal, callerID, localStream.current)
         setPeers(users => [...users, { peer, micState: true, camState: true }])
         peersRef.current.push({
           peerId: callerID,
@@ -458,9 +458,6 @@ function CodeScreen(props) {
     })
 
     peer.on('stream', stream => {
-      // console.log('peer receive stream')
-      // console.log(stream)
-
       peerStreamsRef.current.push({
         peerId: userToSignal
         , stream
@@ -470,7 +467,15 @@ function CodeScreen(props) {
 
     peer.on('track', (track, stream) => {
       console.log(track)
-      console.log(stream.getTracks())
+      if (track.kind === 'audio') {
+        track.addEventListener('mute', (event) => {
+          console.log('event mute')
+        })
+
+        track.addEventListener('unmute', (event) => {
+          console.log('event unmute')
+        })
+      }
     })
 
     return peer
@@ -491,6 +496,10 @@ function CodeScreen(props) {
     peer.on('stream', stream => {
       peerStreamsRef.current.push({ peerId: callerID, stream })
       setPeerStreams(old => [...old, stream])
+    })
+
+    peer.on('track', (track, stream) => {
+      console.log(track)
     })
 
     // peer.on('track', (track, stream) => {
@@ -549,16 +558,13 @@ function CodeScreen(props) {
 
 
   function addInitialCursors(userColors) {
-    console.log('start run function addInitialCuros')
     const users = usersRef.current;
 
     for (let i in users) {
-      console.log('run here => user not empty')
       let user = users[users.length - i - 1];
 
       if (user.id !== socket.current?.id) {
         const cursorColor = userColors[user.id]
-        console.log('run here => socket is not duplicate')
         remoteCursorManager.addCursor(user.id, cursorColor, user.username);
         remoteSelectionManager.addSelection(
           user.id,
