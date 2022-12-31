@@ -180,7 +180,7 @@ function CodeScreen(props) {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:3001/compiler/get-programming-languages`)
+      .get(`https://colaborative-ide-socket.onrender.com/compiler/get-programming-languages`)
       .then((response) => {
         const fetchCompilerLanguages = response.data.result;
         compilerLanguages.current = fetchCompilerLanguages
@@ -194,7 +194,7 @@ function CodeScreen(props) {
   }, [])
 
   useEffect(() => {
-    socket.current = io("http://localhost:3001", {
+    socket.current = io("https://colaborative-ide-socket.onrender.com", {
       transports: ["polling", "websocket"],
     });
 
@@ -646,7 +646,7 @@ function CodeScreen(props) {
 
     setCode(value);
     axios
-      .post("http://localhost:3001/data/save", {
+      .post("https://colaborative-ide-socket.onrender.com/data/save", {
         roomId: roomId,
         code: value,
       })
@@ -661,7 +661,7 @@ function CodeScreen(props) {
     setCompileState(true)
     socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: true })
 
-    axios.post("http://localhost:3001/compiler/execute", {
+    axios.post("https://colaborative-ide-socket.onrender.com/compiler/execute", {
       script: code,
       language: compilerLanguages.current[selectedLanguageIndex].name,
       version:
