@@ -944,10 +944,9 @@ function CodeScreen(props) {
   };
 
   function setDefaultCallingBarPosition() {
-    console.log(editorBounds?.bottom - communicateBoxHeight)
     setCommunicateBoxPosition({
       x: 0,
-      y: (editorBounds?.bottom - communicateBoxHeight) ?? 0
+      y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight) ?? 0
     })
   }
 
