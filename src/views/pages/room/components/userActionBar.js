@@ -56,7 +56,7 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
                 }}
                 onClick={handleOnCamera}
             >
-                {cameraOn ? <VideocamOffRounded fontSize="small" /> : <VideocamRounded fontSize="small" />}
+                {!cameraOn ? <VideocamOffRounded fontSize="small" /> : <VideocamRounded fontSize="small" />}
             </IconButton>
             <IconButton
                 sx={{
@@ -65,7 +65,7 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
                 }}
                 onClick={handleOnMic}
             >
-                {micOn ? <MicOffRounded fontSize="small" /> : <MicRounded fontSize="small" />}
+                {!micOn ? <MicOffRounded fontSize="small" /> : <MicRounded fontSize="small" />}
             </IconButton>
             <Box sx={{ width: "100%" }}>
                 <IconButton
