@@ -120,7 +120,8 @@ function CodeScreen(props) {
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
   const AVATAR_BOX_SPACING = 10;
-  const MAX_AVATAR_SHOW = 3;
+  const EDITOR_BOUND_PADDING = 8;
+  const [maxAvatarShow, setMaxAvatarShow] = useState(3);
 
   const editorUIRef = useRef(null);
   const [editorBounds, setEditorBounds] = useState(null)
@@ -151,13 +152,16 @@ function CodeScreen(props) {
       const communicateBoxSize = communicateBoxRef.current
       setEditorBounds(editorBounds)
       const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right
-        ? editorBounds.right - communicateBoxSize.clientWidth : lastPosition.x
+        ? editorBounds.right - communicateBoxSize.clientWidth - EDITOR_BOUND_PADDING : lastPosition.x
       const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom
-        ? editorBounds.bottom - communicateBoxSize.clientHeight : lastPosition.y;
+        ? editorBounds.bottom - communicateBoxSize.clientHeight - EDITOR_BOUND_PADDING : lastPosition.y;
       setCommunicateBoxPosition({
         x: newX,
         y: newY
       })
+
+      const newMaxAvatarShow = editorUIRef.current.clientWidth/(AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) - 2;
+      setMaxAvatarShow(newMaxAvatarShow < 0 ? 0 : newMaxAvatarShow)
     });
 
     resizeObserver.observe(editorUIRef.current);
@@ -180,7 +184,7 @@ function CodeScreen(props) {
 
   useEffect(() => {
     axios
-      .get(`https://collaborative-ide-backend.onrender.com/compiler/get-programming-languages`)
+      .get(`http://localhost:3001/compiler/get-programming-languages`)
       .then((response) => {
         const fetchCompilerLanguages = response.data.result;
         compilerLanguages.current = fetchCompilerLanguages
@@ -194,7 +198,7 @@ function CodeScreen(props) {
   }, [])
 
   useEffect(() => {
-    socket.current = io("https://collaborative-ide-backend.onrender.com", {
+    socket.current = io("http://localhost:3001/", {
       transports: ["polling", "websocket"],
     });
 
@@ -646,7 +650,7 @@ function CodeScreen(props) {
 
     setCode(value);
     axios
-      .post("https://collaborative-ide-backend.onrender.com/data/save", {
+      .post("http://localhost:3001/data/save", {
         roomId: roomId,
         code: value,
       })
@@ -661,7 +665,7 @@ function CodeScreen(props) {
     setCompileState(true)
     socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: true })
 
-    axios.post("https://collaborative-ide-backend.onrender.com/compiler/execute", {
+    axios.post("http://localhost:3001/compiler/execute", {
       script: code,
       language: compilerLanguages.current[selectedLanguageIndex].name,
       version:
@@ -951,8 +955,8 @@ function CodeScreen(props) {
 
   function setDefaultCallingBarPosition() {
     setCommunicateBoxPosition({
-      x: 0,
-      y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight) ?? 0
+      x: EDITOR_BOUND_PADDING,
+      y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight - EDITOR_BOUND_PADDING) ?? EDITOR_BOUND_PADDING
     })
   }
 
@@ -973,10 +977,10 @@ function CodeScreen(props) {
             position={communicateBoxPosition}
             onDrag={handleDragCallingBox}
             bounds={{
-              left: editorBounds?.left,
-              top: editorBounds?.top,
-              right: editorBounds?.right - communicateBoxWidth,
-              bottom: editorBounds?.bottom - communicateBoxHeight,
+              left: editorBounds?.left + EDITOR_BOUND_PADDING,
+              top: editorBounds?.top + EDITOR_BOUND_PADDING,
+              right: editorBounds?.right - communicateBoxWidth - EDITOR_BOUND_PADDING,
+              bottom: editorBounds?.bottom - communicateBoxHeight - EDITOR_BOUND_PADDING,
             }}>
             <Box
               ref={communicateBoxRef}
@@ -1019,7 +1023,9 @@ function CodeScreen(props) {
                   <Box
                     sx={{
                       display: peers.length > 0 ? "inline" : "none",
-                      width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW),
+                      width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < maxAvatarShow ? peers.length : maxAvatarShow),
+                      overflow: "hidden",
+                      borderRadius: 2,
                     }}>
                     <Carousel
                       sx={{
@@ -1037,7 +1043,7 @@ function CodeScreen(props) {
                           <KeyboardArrowRightRounded />
                         </IconButton>
                       )}
-                      slidesToShow={peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW}
+                      slidesToShow={peers.length < maxAvatarShow ? peers.length : maxAvatarShow}
                       scrollMode="remainder">
                       {peers.map((p, index) => {
                         var userId = peersRef.current[index].peerId

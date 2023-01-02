@@ -45,10 +45,6 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState,
                 height: height,
                 width: width,
                 borderRadius: 2,
-                outline: isSpeaking ? "3.5px" : "2px",
-                outlineStyle: "solid",
-                outlineOffset: isSpeaking ? "0px" : "-1px",
-                outlineColor: isSpeaking ? "#1976d2" : "#1b1b1b",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
@@ -73,6 +69,23 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState,
                 <Typography variant="caption" color="common.white">{name}</Typography>
                 <MicrophoneIcon micState={micState} />
             </Box>
+            <Box
+                key={id}
+                id={id}
+                sx={{
+                    zIndex: 3,
+                    height: height,
+                    width: width,
+                    borderRadius: 2,
+                    outlineStyle: "solid",
+                    outlineOffset: isSpeaking ? "-3px" : "-1.5px",
+                    outlineColor: isSpeaking ? "#1976d2" : "#1b1b1b",
+                    textAlign: "center",
+                    overflow: "hidden",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+            }}/>
         </Box>
     );
 }

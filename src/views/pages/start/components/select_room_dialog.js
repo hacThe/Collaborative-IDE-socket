@@ -51,7 +51,7 @@ function SelectRoomDialog({ open, handleClose }) {
             onClick={() => {
               axios({
                 method: 'GET',
-                url: "https://collaborative-ide-backend.onrender.com/find-room-with-id",
+                url: "http://localhost:3001/find-room-with-id",
                 params: {
                   roomId: roomId
                 },
