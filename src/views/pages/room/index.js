@@ -636,7 +636,7 @@ function CodeScreen(props) {
     console.log('finish function handleOnMount')
     socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
 
-    // setDefaultCallingBarPosition()
+    setDefaultCallingBarPosition()
   }
 
   const handleOnchange = debounce((value) => {
