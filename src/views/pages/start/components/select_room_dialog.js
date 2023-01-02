@@ -1,19 +1,12 @@
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  TextField,
-  Typography,
+  Dialog
 } from "@mui/material";
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { setUserName } from "../../../../redux/slices/app-slice";
 import axios from 'axios';
+import { FIND_ROOM_URL } from "../../../../constants";
 
 function SelectRoomDialog({ open, handleClose }) {
   const [error, setError] = useState("");
@@ -51,7 +44,7 @@ function SelectRoomDialog({ open, handleClose }) {
             onClick={() => {
               axios({
                 method: 'GET',
-                url: "https://collaborative-ide-backend.onrender.com/find-room-with-id",
+                url: FIND_ROOM_URL,
                 params: {
                   roomId: roomId
                 },

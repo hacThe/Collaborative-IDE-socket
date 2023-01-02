@@ -25,6 +25,7 @@ import { MessageList, Input } from 'react-chat-elements';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import hark from "hark";
 import scrollMessageListToBottom from "./utility";
+import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 
 const copyRightTemplate = `/*
   * Copyright (c) 2022 UIT KTPM2019
@@ -97,7 +98,8 @@ function CodeScreen(props) {
 
   const usersRef = useRef([]);
   const { roomId } = useParams();
-  const [code, setCode] = useState("");
+  const [initialCode, setInitialCode] = useState("");
+  var code = ""
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
@@ -142,6 +144,8 @@ function CodeScreen(props) {
   const [isDotInvisible, setDotInvisible] = useState(true)
   const tabIndexRef = useRef(0)
 
+  const someOneChangeCode = useRef(false)
+
   useEffect(() => {
     if (!editorUIRef.current) return;
 
@@ -180,7 +184,7 @@ function CodeScreen(props) {
 
   useEffect(() => {
     axios
-      .get(`https://collaborative-ide-backend.onrender.com/compiler/get-programming-languages`)
+      .get(GET_COMPILER_LANGUAGE_URL)
       .then((response) => {
         const fetchCompilerLanguages = response.data.result;
         compilerLanguages.current = fetchCompilerLanguages
@@ -194,21 +198,22 @@ function CodeScreen(props) {
   }, [])
 
   useEffect(() => {
-    socket.current = io("https://collaborative-ide-backend.onrender.com", {
+    socket.current = io(BASE_BACKEND_URL, {
       transports: ["polling", "websocket"],
     });
 
-    console.log('socket is available')
-
     socket.current.on("CODE_INSERT", (data) => {
+      someOneChangeCode.current = true
       contentManager.insert(data.index, data.text);
     });
 
     socket.current.on("CODE_REPLACE", (data) => {
+      someOneChangeCode.current = true
       contentManager.replace(data.index, data.length, data.text);
     });
 
     socket.current.on("CODE_DELETE", (data) => {
+      someOneChangeCode.current = true
       contentManager.delete(data.index, data.length);
     });
 
@@ -224,8 +229,10 @@ function CodeScreen(props) {
       );
     });
 
-    socket.current.on("CODE_CHANGED", (code) => {
-      setCode(code);
+    socket.current.on("CODE_CHANGED", (newCode) => {
+      code = newCode
+      setInitialCode(newCode)
+      someOneChangeCode.current = true
     });
 
     socket.current.on("OUTPUT_CHANGED", (output) => {
@@ -252,7 +259,6 @@ function CodeScreen(props) {
       } else {
         addUserCursor(data.newUserId, data.userColors[data.newUserId]);
       }
-      console.log('event room:connection')
     });
 
     socket.current.on("ROOM:DISCONNECT", (userId) => {
@@ -286,7 +292,6 @@ function CodeScreen(props) {
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
       roomMessages = roomMessages.map((e, index) => {
         const userId = usersRef.current.find(item => item.username === e.username).id
-        console.log(userColorsRef.current[userId])
         return {
           position: 'left',
           type: "text",
@@ -466,7 +471,6 @@ function CodeScreen(props) {
     })
 
     peer.on('track', (track, stream) => {
-      console.log(track)
       if (track.kind === 'audio') {
         track.addEventListener('mute', (event) => {
           console.log('event mute')
@@ -502,21 +506,6 @@ function CodeScreen(props) {
       console.log(track)
     })
 
-    // peer.on('track', (track, stream) => {
-    //   console.log("============== event track inside addPeer function =================")
-    //   console.log('track')
-    //   console.log(track)
-
-    //   console.log('stream')
-    //   console.log(stream)
-
-    //   console.log('stream track')
-    //   console.log(stream.getTracks())
-
-    //   console.log('peerStreamRef')
-    //   console.log(peerStreamsRef.current)
-    //   console.log("===============================")
-    // })
 
     peer.signal(incomingSignal)
     return peer
@@ -576,7 +565,6 @@ function CodeScreen(props) {
   }
 
   function handleOnMount(editor, monaco) {
-    console.log('start function handleOnMount')
 
     editorRef.current = editor;
     monacoRef.current = monaco;
@@ -600,6 +588,7 @@ function CodeScreen(props) {
       },
       onReplace(index, length, text) {
         const data = { index: index, length: length, text: text };
+        if (isSetInitial) { return }
         socket.current?.emit("CODE_REPLACE", { roomId, data });
       },
       onDelete(index, length) {
@@ -607,8 +596,6 @@ function CodeScreen(props) {
         socket.current?.emit("CODE_DELETE", { roomId, data });
       },
     });
-
-    // addInitialCursors();
 
     editor.onDidChangeCursorPosition((e) => {
       const offset = editor.getModel().getOffsetAt(e.position);
@@ -633,7 +620,6 @@ function CodeScreen(props) {
       socket.current?.emit("SELECTION_CHANGED", { roomId, selectionData });
     });
 
-    console.log('finish function handleOnMount')
     socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
 
     // setDefaultCallingBarPosition()
@@ -644,24 +630,28 @@ function CodeScreen(props) {
       return;
     }
 
-    setCode(value);
-    axios
-      .post("https://collaborative-ide-backend.onrender.com/data/save", {
-        roomId: roomId,
-        code: value,
-      })
-      .then((_) => console.log("Save code successfully"))
-      .catch((error) => {
-        console.log(`Error when save code\n ${error}`);
-        // TODO: handle error
-      });
+    code = value
+    if (!someOneChangeCode.current) {
+      axios
+        .post(SAVE_CODE_URL, {
+          roomId: roomId,
+          code: value,
+        })
+        .then((_) => console.log("Save code successfully"))
+        .catch((error) => {
+          console.log(`Error when save code\n ${error}`);
+          // TODO: handle error
+        });
+    }
+
+    someOneChangeCode.current = false
   }, 500);
 
   async function handleRunCompiler() {
     setCompileState(true)
     socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: true })
 
-    axios.post("https://collaborative-ide-backend.onrender.com/compiler/execute", {
+    axios.post(RUN_COMPILER_URL, {
       script: code,
       language: compilerLanguages.current[selectedLanguageIndex].name,
       version:
@@ -694,7 +684,6 @@ function CodeScreen(props) {
   }
 
   function handleOnLanguageChange(event, value) {
-    console.log('onChangeLanguage function')
     const index = compilerLanguages.current.findIndex((item) => item.name === value);
     setSelectedLanguageIndex(index);
     if (index !== selectedLanguageIndex) {
@@ -731,9 +720,6 @@ function CodeScreen(props) {
       return false
     } else {
       navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
-        console.log('user turn off camera and create new stream')
-        console.log(stream)
-
         userVideo.current.srcObject = stream
 
         if (localStream.current.getAudioTracks()[0].enabled === false) {
@@ -1056,10 +1042,10 @@ function CodeScreen(props) {
           <Editor
             sx={{ zIndex: 0, }}
             height="100vh"
-            value={code}
+            value={initialCode}
             defaultLanguage="undefined"
             language={editorLanguage}
-            defaultValue={copyRightTemplate + code}
+            defaultValue={copyRightTemplate}
             onChange={handleOnchange}
             onMount={handleOnMount}
             theme="vs-dark"

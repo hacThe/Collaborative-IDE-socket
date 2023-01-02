@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import NameInputDialog from "./components/name_input_dialog";
 import SelectRoomDialog from "./components/select_room_dialog";
 import axios from "axios";
+import { CREATE_ROOM_URL } from "../../../constants";
 
 function StartScreen(props) {
   const appState = useSelector((state) => state.app);
@@ -12,7 +13,7 @@ function StartScreen(props) {
   const navigate = useNavigate();
   const handleCreateRoom = async () => {
     const res = await axios.post(
-      `https://collaborative-ide-backend.onrender.com/create-room-with-user`,
+      CREATE_ROOM_URL,
       {}
     );
     navigate(`room/${res.data.roomId}`);
