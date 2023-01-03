@@ -306,7 +306,8 @@ function CodeScreen(props) {
           type: "text",
           title: e.username,
           text: e.message,
-          titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR
+          titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR,
+          date: Date(),
         }
       })
 
@@ -768,12 +769,17 @@ function CodeScreen(props) {
 
   function addMessage(senderName, message, isRight) {
     const userId = usersRef.current.find(item => item.username === senderName).id
+
     var messageEntity = {
       position: isRight ? "right" : 'left',
       type: "text",
       title: isRight ? null : senderName,
       text: message,
-      titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR
+      titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR,
+      // use date property if in day 
+      // use dateString property if not in day
+      date: new Date(2023, 0, 3, 10, 33, 30, 0),
+      dateString: '12:12 AM, 12-12-23'
     }
     setMessageList(oldArray => [...oldArray, messageEntity])
   }
