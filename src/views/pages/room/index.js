@@ -27,16 +27,16 @@ import hark from "hark";
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 
-const copyRightTemplate = `/*
-  * Copyright (c) 2022 UIT KTPM2019
-  * All rights reserved.
-  * 19522496 Trần Lê Thanh Tùng
-  * 19521743 Trương Kim Lâm
-  * 19522252 Dương Hiển Thê
-  */
- 
- 
-  `;
+// const copyRightTemplate = `/*
+//   * Copyright (c) 2022 UIT KTPM2019
+//   * All rights reserved.
+//   * 19522496 Trần Lê Thanh Tùng
+//   * 19521743 Trương Kim Lâm
+//   * 19522252 Dương Hiển Thê
+//   */
+
+
+//   `;
 
 const configuration = {
   // Using From https://www.metered.ca/tools/openrelay/
@@ -99,7 +99,7 @@ function CodeScreen(props) {
   const usersRef = useRef([]);
   const { roomId } = useParams();
   const [initialCode, setInitialCode] = useState("");
-  var code = ""
+  const code = useRef("")
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
   const username = useSelector((state) => state.app).username;
@@ -118,6 +118,7 @@ function CodeScreen(props) {
   const peerStreamsRef = useRef([])
   const localStream = useRef(null)
   const [speakingUsers, setSpeakingUsers] = useState([])
+  const [languageTemplate, setLanguageTemplate] = useState("")
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -190,6 +191,9 @@ function CodeScreen(props) {
         compilerLanguages.current = fetchCompilerLanguages
         setLanguageList(fetchCompilerLanguages.map((item) => item.name));
         versionList.current = fetchCompilerLanguages[selectedLanguageIndex].versions
+        // setLanguageTemplate(fetchCompilerLanguages[selectedLanguageIndex].template)
+        code.current = fetchCompilerLanguages[selectedLanguageIndex].template
+        setInitialCode(fetchCompilerLanguages[selectedLanguageIndex].template)
       })
       .catch((error) => {
         console.log(`Error when get compiler languages\n ${error}`);
@@ -230,7 +234,7 @@ function CodeScreen(props) {
     });
 
     socket.current.on("CODE_CHANGED", (newCode) => {
-      code = newCode
+      code.current = newCode
       setInitialCode(newCode)
       someOneChangeCode.current = true
     });
@@ -279,6 +283,7 @@ function CodeScreen(props) {
     })
 
     socket.current.on('CHANGE_VERSION', (newVersionIndex) => {
+      console.log(newVersionIndex)
       setSelectedVersionIndex(newVersionIndex);
     })
 
@@ -626,11 +631,7 @@ function CodeScreen(props) {
   }
 
   const handleOnchange = debounce((value) => {
-    if (code === value) {
-      return;
-    }
-
-    code = value
+    code.current = value
     if (!someOneChangeCode.current) {
       axios
         .post(SAVE_CODE_URL, {
@@ -650,9 +651,8 @@ function CodeScreen(props) {
   async function handleRunCompiler() {
     setCompileState(true)
     socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: true })
-
     axios.post(RUN_COMPILER_URL, {
-      script: code,
+      script: code.current,
       language: compilerLanguages.current[selectedLanguageIndex].name,
       version:
         compilerLanguages.current[selectedLanguageIndex].versions[selectedVersionIndex],
@@ -662,30 +662,30 @@ function CodeScreen(props) {
       setCompileState(false)
       socket.current?.emit("OUTPUT_CHANGED", { roomId, output });
       socket.current?.emit('COMPILE_STATE_CHANGED', { roomId, state: false })
+    }).catch((err) => {
+      // TODO: Loz Lam show dialog
+      setCompileState(false)
     })
 
   }
 
-  function changeEditorLanguage(languageCode) {
-    switch (languageCode) {
-      case "nodejs":
-        setEditorLanguage("javascript");
-        break;
-      default:
-        setEditorLanguage(null);
-        var oldModel = editorRef.current.getModel();
-        var newModel = monacoRef.current.editor.createModel(oldModel.getValue(), languageCode.replace(/[0-9]/g, ''));
-        editorRef.current.setModel(newModel);
-        if (oldModel) {
-          oldModel.dispose();
-        }
-        break;
+  function changeEditorLanguage(rawLanguageCode) {
+    const languageCode = rawLanguageCode === "nodejs" ? "javascript" : rawLanguageCode.replace(/[0-9]/g, '')
+    setEditorLanguage(null)
+    var oldModel = editorRef.current.getModel();
+    var newModel = monacoRef.current.editor.createModel(oldModel.getValue(), languageCode);
+    editorRef.current.setModel(newModel);
+    if (oldModel) {
+      oldModel.dispose();
     }
   }
+
 
   function handleOnLanguageChange(event, value) {
     const index = compilerLanguages.current.findIndex((item) => item.name === value);
     setSelectedLanguageIndex(index);
+    code.current = compilerLanguages.current[index].template
+    setInitialCode(compilerLanguages.current[index].template)
     if (index !== selectedLanguageIndex) {
       setSelectedVersionIndex(0);
       versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
@@ -1045,7 +1045,7 @@ function CodeScreen(props) {
             value={initialCode}
             defaultLanguage="undefined"
             language={editorLanguage}
-            defaultValue={copyRightTemplate}
+            // defaultValue={languageTemplate}
             onChange={handleOnchange}
             onMount={handleOnMount}
             theme="vs-dark"
