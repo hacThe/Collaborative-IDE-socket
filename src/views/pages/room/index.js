@@ -123,7 +123,8 @@ function CodeScreen(props) {
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
   const AVATAR_BOX_SPACING = 10;
-  const MAX_AVATAR_SHOW = 3;
+  const EDITOR_BOUND_PADDING = 8;
+  const [maxAvatarShow, setMaxAvatarShow] = useState(3);
 
   const editorUIRef = useRef(null);
   const [editorBounds, setEditorBounds] = useState(null)
@@ -156,13 +157,16 @@ function CodeScreen(props) {
       const communicateBoxSize = communicateBoxRef.current
       setEditorBounds(editorBounds)
       const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right
-        ? editorBounds.right - communicateBoxSize.clientWidth : lastPosition.x
+        ? editorBounds.right - communicateBoxSize.clientWidth - EDITOR_BOUND_PADDING : lastPosition.x
       const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom
-        ? editorBounds.bottom - communicateBoxSize.clientHeight : lastPosition.y;
+        ? editorBounds.bottom - communicateBoxSize.clientHeight - EDITOR_BOUND_PADDING : lastPosition.y;
       setCommunicateBoxPosition({
         x: newX,
         y: newY
       })
+
+      const newMaxAvatarShow = editorUIRef.current.clientWidth / (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) - 2;
+      setMaxAvatarShow(newMaxAvatarShow < 0 ? 0 : newMaxAvatarShow)
     });
 
     resizeObserver.observe(editorUIRef.current);
@@ -627,7 +631,7 @@ function CodeScreen(props) {
 
     socket.current.emit("CONNECTED_TO_ROOM", { roomId, username });
 
-    // setDefaultCallingBarPosition()
+    setDefaultCallingBarPosition()
   }
 
   const handleOnchange = debounce((value) => {
@@ -937,8 +941,8 @@ function CodeScreen(props) {
 
   function setDefaultCallingBarPosition() {
     setCommunicateBoxPosition({
-      x: 0,
-      y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight) ?? 0
+      x: EDITOR_BOUND_PADDING,
+      y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight - EDITOR_BOUND_PADDING) ?? EDITOR_BOUND_PADDING
     })
   }
 
@@ -959,10 +963,10 @@ function CodeScreen(props) {
             position={communicateBoxPosition}
             onDrag={handleDragCallingBox}
             bounds={{
-              left: editorBounds?.left,
-              top: editorBounds?.top,
-              right: editorBounds?.right - communicateBoxWidth,
-              bottom: editorBounds?.bottom - communicateBoxHeight,
+              left: editorBounds?.left + EDITOR_BOUND_PADDING,
+              top: editorBounds?.top + EDITOR_BOUND_PADDING,
+              right: editorBounds?.right - communicateBoxWidth - EDITOR_BOUND_PADDING,
+              bottom: editorBounds?.bottom - communicateBoxHeight - EDITOR_BOUND_PADDING,
             }}>
             <Box
               ref={communicateBoxRef}
@@ -1005,7 +1009,9 @@ function CodeScreen(props) {
                   <Box
                     sx={{
                       display: peers.length > 0 ? "inline" : "none",
-                      width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW),
+                      width: (AVATAR_BOX_WIDTH + AVATAR_BOX_SPACING) * (peers.length < maxAvatarShow ? peers.length : maxAvatarShow),
+                      overflow: "hidden",
+                      borderRadius: 2,
                     }}>
                     <Carousel
                       sx={{
@@ -1023,7 +1029,7 @@ function CodeScreen(props) {
                           <KeyboardArrowRightRounded />
                         </IconButton>
                       )}
-                      slidesToShow={peers.length < MAX_AVATAR_SHOW ? peers.length : MAX_AVATAR_SHOW}
+                      slidesToShow={peers.length < maxAvatarShow ? peers.length : maxAvatarShow}
                       scrollMode="remainder">
                       {peers.map((p, index) => {
                         var userId = peersRef.current[index].peerId
