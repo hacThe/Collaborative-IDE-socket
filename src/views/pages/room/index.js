@@ -805,11 +805,6 @@ function CodeScreen(props) {
       date: messageDate
       // use date property if in day 
       // use dateString property if not in day
-<<<<<<< HEAD
-=======
-      date: new Date(2023, 0, 3, 10, 33, 30, 0),
-      dateString: '8/4/2001 10:00 PM'
->>>>>>> 05b46d7 (change ui time for chat)
     }
 
     setMessageList(oldArray => [...oldArray, messageEntity])
