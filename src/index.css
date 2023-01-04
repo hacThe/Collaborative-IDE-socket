@@ -152,6 +152,22 @@ svg {
   margin: 8px 0px;
 }
 
+.rce-mbox-title {
+  margin-bottom: 2px !important;
+}
+
+.rce-mbox-time {
+  color: #ffffff73 !important;
+  padding-left: 24px;
+  padding-top: 2px;
+  font-size: 8.5px !important;
+  font-weight: 300;
+}
+
+.rce-mbox-time.has-title {
+  padding-left: 8px !important;
+}
+
 .slider-frame {
   overflow: visible !important;
 }
