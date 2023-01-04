@@ -293,22 +293,32 @@ function CodeScreen(props) {
 
     socket.current.on('COMPILE_STATE_CHANGED', (compileState) => setCompileState(compileState))
 
-    socket.current.on('CHAT_MESSAGE', ({ senderName, message }) => {
-      addMessage(senderName, message, false)
+    socket.current.on('CHAT_MESSAGE', ({ senderName, message, date }) => {
+      addMessage(senderName, message, date, false)
       tabIndexRef.current === 1 ? setDotInvisible(true) : setDotInvisible(false)
     })
 
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
       roomMessages = roomMessages.map((e, index) => {
+        // here
         const userId = usersRef.current.find(item => item.username === e.username).id
-        return {
+        const messageDateTime = e.date
+        const messageEntity = {
           position: 'left',
           type: "text",
           title: e.username,
           text: e.message,
           titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR,
-          date: Date(),
         }
+
+        const now = new Date().setHours(0, 0, 0, 0)
+        if (messageDateTime < now) {
+          messageEntity.dateString = _createDateFormat(messageDateTime)
+        } else {
+          messageDateTime.date = messageDateTime
+        }
+
+        return messageEntity
       })
 
       setMessageList(roomMessages)
@@ -450,12 +460,14 @@ function CodeScreen(props) {
 
   function sendChatMessage() {
     if (inputRef.current.value === '') return
+    const sendDate = Date()
 
-    addMessage(username, inputRef.current.value, true)
+    addMessage(username, inputRef.current.value, sendDate, true)
     socket.current.emit('CHAT_MESSAGE', {
       'username': username,
       roomId,
-      'message': inputRef.current.value
+      'message': inputRef.current.value,
+      'date': sendDate,
     })
     inputRef.current.value = ''
   }
@@ -766,9 +778,23 @@ function CodeScreen(props) {
     return false
   }
 
+  function _createDateFormat(dateTime) {
+    var time = ''
+    const isAfternoon = dateTime.getHours() > 12 ? true : false
+    if (isAfternoon) {
+      time = `${dateTime.getHours() - 12}:${dateTime.getMinutes()} PM`
+    } else {
+      time = `${dateTime.getHours()}:${dateTime.getMinutes()} AM`
+    }
 
-  function addMessage(senderName, message, isRight) {
+    const date = `${dateTime.getDate()}-${dateTime.getMonth()}-${dateTime.getFullYear().toString().substr(-2)}`
+    return `${time} ${date}`
+  }
+
+
+  function addMessage(senderName, message, date, isRight) {
     const userId = usersRef.current.find(item => item.username === senderName).id
+    const messageDate = new Date(date)
 
     var messageEntity = {
       position: isRight ? "right" : 'left',
@@ -776,13 +802,15 @@ function CodeScreen(props) {
       title: isRight ? null : senderName,
       text: message,
       titleColor: userId ? userColorsRef.current[userId] : USER_DEFAULT_COLOR,
+      date: messageDate
       // use date property if in day 
       // use dateString property if not in day
-      date: new Date(2023, 0, 3, 10, 33, 30, 0),
-      dateString: '12:12 AM, 12-12-23'
     }
+
     setMessageList(oldArray => [...oldArray, messageEntity])
   }
+
+
 
   const infoTab = () => {
     return <>
