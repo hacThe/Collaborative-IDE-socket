@@ -26,6 +26,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import hark from "hark";
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
+import UserPalette from "./components/palette";
 
 // const copyRightTemplate = `/*
 //   * Copyright (c) 2022 UIT KTPM2019
@@ -61,22 +62,6 @@ const configuration = {
     }
   ]
 }
-
-const CURSOR_COLOR = {
-  list: [
-    "#355FFA",
-    "#0ac285",
-    "#F85212",
-    "#bf4545",
-    "#e599a6",
-    "#a28144",
-    "#e08300",
-    "#A545EE",
-    "#6565cd",
-    '#669999',
-  ],
-  default: "#808080",
-};
 
 const USER_DEFAULT_COLOR = "#808080";
 
@@ -118,7 +103,6 @@ function CodeScreen(props) {
   const peerStreamsRef = useRef([])
   const localStream = useRef(null)
   const [speakingUsers, setSpeakingUsers] = useState([])
-  const [languageTemplate, setLanguageTemplate] = useState("")
 
   const AVATAR_BOX_WIDTH = 200;
   const AVATAR_BOX_HEIGHT = 150;
@@ -920,6 +904,12 @@ function CodeScreen(props) {
     </>
   }
 
+  const settingTab = () => {
+    return (
+      <UserPalette userToColor={userColors} />
+    )
+  }
+
   const messageTab = () => {
     return (
       <>
@@ -1106,8 +1096,8 @@ function CodeScreen(props) {
               overflow: "auto",
             }}
           >
-            <BasicTabs tabIndexRef={tabIndexRef} labels={['Info', 'Message']} components={[
-              infoTab(), messageTab()
+            <BasicTabs tabIndexRef={tabIndexRef} labels={['Info', 'Message', 'Setting']} components={[
+              infoTab(), messageTab(), settingTab(),
             ]} dotState={isDotInvisible} setDotState={setDotInvisible} />
 
           </Box>
