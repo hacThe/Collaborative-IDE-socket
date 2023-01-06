@@ -5,7 +5,7 @@ import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import InfoIcon from '@mui/icons-material/Info';
 import MessageIcon from '@mui/icons-material/Message';
-import { color } from '@mui/system';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import { Badge } from '@mui/material';
 import scrollMessageListToBottom from '../utility';
 
@@ -41,7 +41,7 @@ function a11yProps(index) {
 }
 
 export default function BasicTabs({ tabIndexRef, components, labels, dotState, setDotState }) {
-    const icons = [<InfoIcon />, <MessageIcon />]
+    const icons = [<InfoIcon />, <MessageIcon />, <SettingsRoundedIcon />]
     const [tabIndex, setTabIndex] = React.useState(0)
     const handleChange = (event, newValue) => {
         if (newValue === 1) {
@@ -68,7 +68,7 @@ export default function BasicTabs({ tabIndexRef, components, labels, dotState, s
                     {labels.map((item, index) => {
                         var icon = index === 1 ? <Badge invisible={dotState} variant='dot' color='info'> {icons[index]} </Badge> : icons[index]
 
-                        return <Tab sx={{ width: '50%' }} icon={icon} key={index} {...a11yProps(index)} />
+                        return <Tab sx={{ width: '33%' }} icon={icon} key={index} {...a11yProps(index)} />
                     })}
                 </Tabs>
             </Box>
