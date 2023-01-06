@@ -1,23 +1,15 @@
-import { Button, Typography, Box } from "@mui/material";
+import { Button, Box } from "@mui/material";
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import NameInputDialog from "./components/name_input_dialog";
+import { useSelector } from "react-redux";
 import SelectRoomDialog from "./components/select_room_dialog";
-import axios from "axios";
-import { CREATE_ROOM_URL } from "../../../constants";
 
-function StartScreen(props) {
-  const appState = useSelector((state) => state.app);
+
+function StartScreen() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const handleCreateRoom = async () => {
-    const res = await axios.post(
-      CREATE_ROOM_URL,
-      {}
-    );
-    navigate(`room/${res.data.roomId}`);
-  };
+  const appState = useSelector((state) => state.app);
+
 
   return (
     <Box
@@ -37,7 +29,7 @@ function StartScreen(props) {
           alignItems: "center",
         }}
       >
-        <h2 style={{ display: "inline-block" }}>Hello <strong> {appState?.username} </strong></h2>
+        {/* <h2 style={{ display: "inline-block" }}>Hello <strong> {appState?.username} </strong></h2> */}
         <Box
           sx={{
             display: "flex",
@@ -53,7 +45,11 @@ function StartScreen(props) {
               fontFamily: "Roboto Mono",
             }}
             variant="contained"
-            onClick={handleCreateRoom}
+            onClick={() => {
+              navigate(`inputName`, {
+                state: { 'isCreateRoom': true }
+              })
+            }}
           >
             Create room
           </Button>
@@ -68,7 +64,6 @@ function StartScreen(props) {
           >
             Join room
           </Button>
-          <NameInputDialog open={!appState.username} />
           <SelectRoomDialog open={open} handleClose={() => setOpen(false)} />
         </Box>
       </Box>
