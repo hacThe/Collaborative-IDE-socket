@@ -1,19 +1,13 @@
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  TextField,
-  Typography,
+  Dialog
 } from "@mui/material";
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { setUserName } from "../../../../redux/slices/app-slice";
 
-function NameInputDialog({ open }) {
+function NameInputDialog({ onPressHandler }) {
   const [name, setName] = useState("");
   const dispatch = useDispatch();
   return (
@@ -24,7 +18,7 @@ function NameInputDialog({ open }) {
         overflow: "hidden",
         borderRadius: "12px",
       }}
-      open={open}
+      open={true}
       onClose={null}
     >
       <Box
@@ -37,7 +31,10 @@ function NameInputDialog({ open }) {
         <h2>Enter your name</h2>
         <input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            // username = e.target.value
+            setName(e.target.value)
+          }}
           type="text"
         />
 
@@ -50,7 +47,8 @@ function NameInputDialog({ open }) {
           }}
           variant="contained"
           onClick={() => {
-            dispatch(setUserName(name));
+            dispatch(setUserName(name))
+            onPressHandler(name)
           }}
         >
           Save

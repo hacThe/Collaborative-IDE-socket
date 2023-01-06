@@ -51,8 +51,10 @@ function SelectRoomDialog({ open, handleClose }) {
               })
                 .then((response) => {
                   const roomId = response.data["foundRoomIds"];
-                  console.log(response);
-                  navigate(`room/${roomId}`);
+                  console.log(roomId)
+                  navigate(`inputName`, {
+                    state: { 'isCreateRoom': false, 'roomId': roomId }
+                  })
                 }).catch((error) => {
                   setError(error.response.data);
                 });
