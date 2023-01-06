@@ -26,7 +26,6 @@ import hark from "hark";
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 import UserPalette from "./components/palette";
-import { useNavigate } from "react-router-dom";
 
 // const copyRightTemplate = `/*
 //   * Copyright (c) 2022 UIT KTPM2019
@@ -233,7 +232,7 @@ function CodeScreen({ username }) {
       const userId = data.userId
       setUserColors(userToColor)
       userColorsRef.current = userToColor
-      
+
       await remoteCursorManager.removeCursor(userId)
       await remoteSelectionManager.removeSelection(userId)
       addUserCursor(userId, userToColor[userId])
@@ -923,9 +922,9 @@ function CodeScreen({ username }) {
       <Box sx={{ marginTop: "16px", marginLeft: "18px", }}>
         <h3>Change your color:</h3>
         <Box sx={{ minHeight: "50px", maxHeight: "26vh", padding: "4px 0px 8px 0px", overflow: "visible" }}>
-          <UserPalette 
-            userToColor={userColors} 
-            userId={socket.current?.id} 
+          <UserPalette
+            userToColor={userColors}
+            userId={socket.current?.id}
             onChange={(color) => {
               let newUserColors = userColorsRef.current
               newUserColors[socket.current?.id] = color
@@ -945,7 +944,7 @@ function CodeScreen({ username }) {
             variant="contained"
             color="error"
             fullWidth={true}
-            onClick={()=> {
+            onClick={() => {
               navigate(`/`)
             }}
           >
