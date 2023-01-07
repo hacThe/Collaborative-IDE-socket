@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useSelector } from "react-redux";
 import io from "socket.io-client";
-import { Navigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
@@ -71,7 +70,7 @@ const videoConstraint = {
 }
 
 
-function CodeScreen(props) {
+function CodeScreen({ username }) {
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
   var contentManager = null;
@@ -87,7 +86,6 @@ function CodeScreen(props) {
   const code = useRef("")
   const [output, setOutput] = useState("");
   const [users, setUsers] = useState([]);
-  const username = useSelector((state) => state.app).username;
   const [compileState, setCompileState] = useState(false)
 
   const compilerLanguages = useRef([])
@@ -548,7 +546,7 @@ function CodeScreen(props) {
   }
 
 
-  if (!username) return <Navigate to="/" replace />;
+  // if (!username) return <Navigate to="/" replace />;
 
 
 
