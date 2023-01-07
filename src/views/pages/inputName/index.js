@@ -1,11 +1,9 @@
 import { Box } from "@mui/material";
 import NameInputDialog from "./components/name_input_dialog";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CREATE_ROOM_URL, CHECK_DUPLICATE_USERNAME_URL } from "../../../constants";
 import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
 
 function InputNameScreen() {
     const navigate = useNavigate();
@@ -42,7 +40,8 @@ function InputNameScreen() {
     }
 
     function onPressHandler(username) {
-        location.state.isCreateRoom ? createRoom() : joinRoom(username)
+        sessionStorage.setItem('username', username)
+        location.state?.isCreateRoom ?? false ? createRoom() : joinRoom(username)
     }
 
     return (
