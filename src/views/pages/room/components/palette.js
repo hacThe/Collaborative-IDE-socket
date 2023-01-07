@@ -1,30 +1,47 @@
 import { useState } from 'react';
-import Circle from '@uiw/react-color-circle';
-
+import Circle from '@uiw/react-color-circle/esm/index';
 const USER_COLORS = [
-    "#355FFA",
+    "#808080",
+    "#355ffa",
     "#0ac285",
-    "#F85212",
+    "#f85212",
     "#bf4545",
     "#e599a6",
     "#a28144",
     "#e08300",
-    "#A545EE",
+    "#a545ee",
     "#6565cd",
     '#669999',
 ];
-const USER_DEFAULT_COLOR = "#808080";
 
-function UserPalette({ userToColor }) {
-    const [hex, setHex] = useState('#355FFA');
+function UserPalette({ userToColor, userId, onChange }) {
+    const [hex, setHex] = useState(userToColor[userId]);
+    const userColors = USER_COLORS.map((color, index) => {
+        return {
+            color: color,
+            title: color,
+            disabled: index === 0 || userToColor[userId]?.toLowerCase() === color?.toLowerCase() ? false : isColorDisabled(color, userToColor),
+        }
+    })
     return (
         <Circle
-            colors={USER_COLORS}
+            colors={userColors}
             color={hex}
             onChange={(color) => {
                 setHex(color.hex);
+                onChange(color.hex)
             }}
         />
     );
 }
+
+function isColorDisabled(color, rUserToColor) {
+    const userToColor = new Map(Object.entries(rUserToColor))
+    const values = Array.from(userToColor.values() ?? {}).map(item => item.toLowerCase())
+    if (values.includes(color.toLowerCase())) {
+        return true;
+    }
+    return false;
+}
+
 export default UserPalette;
