@@ -225,6 +225,17 @@ function CodeScreen({ username }) {
       someOneChangeCode.current = true
     });
 
+    socket.current.on("COLOR_CHANGED", async (data) => {
+      const userToColor = data.userToColor
+      const userId = data.userId
+      setUserColors(userToColor)
+      userColorsRef.current = userToColor
+      
+      await remoteCursorManager.removeCursor(userId)
+      await remoteSelectionManager.removeSelection(userId)
+      addUserCursor(userId, userToColor[userId])
+    })
+
     socket.current.on("OUTPUT_CHANGED", (output) => {
       setOutput(output);
     });
@@ -256,6 +267,9 @@ function CodeScreen({ username }) {
       setUsers(users);
       removeUserCursor(userId);
       usersRef.current = users;
+
+      delete userColorsRef.current[userId];
+      setUserColors(userColorsRef.current);
     });
 
     socket.current.on('CHANGE_LANGUAGE', (newLanguage) => {
@@ -322,6 +336,7 @@ function CodeScreen({ username }) {
       socket.current.off("CURSOR_CHANGED");
       socket.current.off("SELECTION_CHANGED");
       socket.current.off("CODE_CHANGED");
+      socket.current.off("COLOR_CHANGED");
       socket.current.off("OUTPUT_CHANGED");
       socket.current.off("connect_error");
       socket.current.off("connect");
@@ -516,7 +531,6 @@ function CodeScreen({ username }) {
   }
 
   function removeUserCursor(oldUserId) {
-    const users = usersRef.current;
     if (remoteCursorManager && remoteSelectionManager) {
       remoteCursorManager.removeCursor(oldUserId);
       remoteSelectionManager.removeSelection(oldUserId);
@@ -540,7 +554,6 @@ function CodeScreen({ username }) {
           cursorColor,
           newUser.username
         );
-
       }
     }
   }
@@ -904,7 +917,24 @@ function CodeScreen({ username }) {
 
   const settingTab = () => {
     return (
-      <UserPalette userToColor={userColors} />
+      <Box sx={{ marginTop: "16px", marginLeft: "18px", }}>
+        <h3>Change your color:</h3>
+        <Box sx={{ minHeight: "50px", maxHeight: "26vh", padding: "4px 0px 8px 0px", overflow: "visible" }}>
+          <UserPalette 
+            userToColor={userColors} 
+            userId={socket.current?.id} 
+            onChange={(color) => {
+              let newUserColors = userColorsRef.current
+              newUserColors[socket.current?.id] = color
+              setUserColors(state => ({
+                ...state,
+                ...newUserColors
+              }))
+              userColorsRef.current = newUserColors
+              socket.current?.emit('COLOR_CHANGED', { userId: socket.current?.id, color: color })
+            }} />
+        </Box>
+      </Box>
     )
   }
 
