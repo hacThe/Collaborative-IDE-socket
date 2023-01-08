@@ -1,46 +1,140 @@
-import { Button, Box } from "@mui/material";
+import { Button, Grid, IconButton, Box } from "@mui/material";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import SelectRoomDialog from "./components/select_room_dialog";
+import CodeRoundedIcon from '@mui/icons-material/CodeRounded';
+import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
+import Carousel from "nuka-carousel";
+import VideoChatRoundedIcon from '@mui/icons-material/VideoChatRounded';
+import logo from '../../../assets/collab-coding-2.png';
+import { ReactComponent as GithubLogo } from '../../../assets/github-logo.svg';
 
 
 function StartScreen() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const appState = useSelector((state) => state.app);
-
 
   return (
-    <Box
+    <Grid container
       sx={{
-        background: "#222",
         height: "100vh",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Box
-        sx={{
+      }}>
+      <Grid 
+        sx={{ 
+          background: "#151515",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-        }}
-      >
-        {/* <h2 style={{ display: "inline-block" }}>Hello <strong> {appState?.username} </strong></h2> */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
+          textAlign: "center",
+          lineHeight: 1.6,
+          color: "#cccccc",
+          overflow: "hidden !important",
+          width: "100%",
+          padding: "36px 0px 36px 0px",
+        }} 
+        item md={7}>
+          <Carousel
+          style={{
+            width: "70vw",
           }}
-        >
+            adaptiveHeight={true}
+            renderCenterLeftControls={null}
+            renderCenterRightControls={null}
+            slidesToShow={1}
+            scrollMode="reminder">
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+              }}>
+                <CodeRoundedIcon sx={{
+                  fontSize: "140px"
+                }}/>
+                <Box sx={{
+                  width: "50vw",
+                }}>
+                  This is an online code editor that allows you to write, compile and execute your code online in many programming languages...
+                </Box>
+              </div>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+              }}>
+                <Groups2RoundedIcon sx={{
+                  fontSize: "140px"
+                }}/>
+                <Box sx={{
+                  width: "50vw",
+                }}>
+                  ...collaboratively with your teammates, and colleagues.
+                </Box>
+              </div>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+              }}>
+                <VideoChatRoundedIcon sx={{
+                  fontSize: "140px"
+                }}/>
+                <Box sx={{
+                  width: "50vw",
+                }}>
+                  When coding together, you and your teammates can also communicate with each other via messaging and video calling.
+                </Box>
+              </div>
+          </Carousel>
+      </Grid>
+      <Grid 
+        sx={{ 
+          background: "#111111",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "start",
+          alignItems: "end",
+          width: "100%",
+          color: "#fff",
+        }}
+        item md={5}>
+          
+          <IconButton sx={{
+            margin: "8px",
+          }} onClick={() => {
+            window.open("https://github.com/hacThe/Collaborative-IDE-socket/", '_blank');
+          }}>
+            <GithubLogo style={{
+              width: "36px",
+              height: "36px",
+            }}/>
+          </IconButton>
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+          width: "100%",
+          paddingBottom: "36px",
+        }}>
+          <img src={logo} alt="logo" style={{
+            width: "20%",
+            paddingBottom: "20px",
+          }}/>
+          <p style={{ width: "130px", textAlign: "center", lineHeight: "1.6" }}>
+            Welcome to <strong>Collab Coding</strong>
+          </p>
           <Button
             sx={{
-              marginTop: "12px",
+              marginTop: "18px",
               minWidth: "200px",
               fontFamily: "Roboto Mono",
             }}
@@ -58,6 +152,8 @@ function StartScreen() {
               marginTop: "12px",
               minWidth: "200px",
               fontFamily: "Roboto Mono",
+              color: "#1976d2",
+              backgroundColor: "#ffffff",
             }}
             variant="outlined"
             onClick={() => setOpen(true)}
@@ -66,8 +162,8 @@ function StartScreen() {
           </Button>
           <SelectRoomDialog open={open} handleClose={() => setOpen(false)} />
         </Box>
-      </Box>
-    </Box>
+      </Grid>
+    </Grid>
   );
 }
 

@@ -170,6 +170,15 @@ svg {
 
 .slider-frame {
   overflow: visible !important;
+  height: unset !important;
+}
+
+.slider-control-bottomcenter > ul {
+  top: 32px !important;
+}
+
+.slider-control-bottomcenter > ul > li {
+  margin: 2px !important;
 }
 
 ::-webkit-scrollbar {
