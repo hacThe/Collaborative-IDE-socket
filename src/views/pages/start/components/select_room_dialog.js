@@ -13,12 +13,13 @@ function SelectRoomDialog({ open, handleClose }) {
   const [roomId, setRoomId] = useState("");
   const navigate = useNavigate();
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog PaperProps={{ style: { backgroundColor: "transparent" } }} open={open} onClose={handleClose}>
       <Box
         sx={{
-          background: "#151515",
+          backgroundColor: "#151515",
           minWidth: "500px",
           padding: "24px",
+          borderRadius: "8px",
         }}
       >
         <h2>Enter room id</h2>
@@ -28,10 +29,10 @@ function SelectRoomDialog({ open, handleClose }) {
           type="text"
         />
         <h4 style={{ color: "red", display: "flex", justifyContent: "right", alignItems: "right", marginTop: "4px" }}>{error}</h4>
-        <Box sx={{ display: "flex", marginTop: "12px" }}>
-          <Button
-            sx={{ marginRight: "12px", fontFamily: "Roboto Mono" }}
-            variant="outlined"
+        <Box sx={{ display: "flex", marginTop: "12px", justifyContent: "right", alignItems: "right", }}>
+          <Button className="cancel-button"
+            sx={{ marginRight: "8px", fontFamily: "Roboto Mono" }}
+            variant="text"
             onClick={handleClose}
           >
             Cancel
@@ -60,7 +61,7 @@ function SelectRoomDialog({ open, handleClose }) {
                 });
             }}
           >
-            Go
+            Join
           </Button>
         </Box>
       </Box>

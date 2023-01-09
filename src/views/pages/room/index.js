@@ -26,6 +26,7 @@ import hark from "hark";
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 import UserPalette from "./components/palette";
+import { useNavigate } from "react-router-dom";
 
 // const copyRightTemplate = `/*
 //   * Copyright (c) 2022 UIT KTPM2019
@@ -71,6 +72,8 @@ const videoConstraint = {
 
 
 function CodeScreen({ username }) {
+  const navigate = useNavigate()
+
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
   var contentManager = null;
@@ -933,6 +936,21 @@ function CodeScreen({ username }) {
               userColorsRef.current = newUserColors
               socket.current?.emit('COLOR_CHANGED', { userId: socket.current?.id, color: color })
             }} />
+        </Box>
+        <Box sx={{ marginTop: "12px", marginRight: "18px" }}>
+          <Button
+            sx={{
+              fontFamily: "Roboto Mono",
+            }}
+            variant="contained"
+            color="error"
+            fullWidth={true}
+            onClick={()=> {
+              navigate(`/`)
+            }}
+          >
+            Leave room
+          </Button>
         </Box>
       </Box>
     )
