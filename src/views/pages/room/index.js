@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
@@ -17,26 +17,15 @@ import { KeyboardArrowLeftRounded, KeyboardArrowRightRounded } from "@mui/icons-
 import UserAvatarBox from "./components/userAvatarBox";
 import UserActionBar from "./components/userActionBar";
 import SimplePeer from 'simple-peer';
-import MainAvatarBox from "./components/mainAvatarBox";
+import MainAvatarBox from "../../common_components/mainAvatarBox";
 import BasicTabs from "./components/tabBar";
 import "react-chat-elements/dist/main.css"
 import { MessageList, Input } from 'react-chat-elements/build/index';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
-import hark from "hark";
+import hark from "hark"
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 import UserPalette from "./components/palette";
-
-// const copyRightTemplate = `/*
-//   * Copyright (c) 2022 UIT KTPM2019
-//   * All rights reserved.
-//   * 19522496 Trần Lê Thanh Tùng
-//   * 19521743 Trương Kim Lâm
-//   * 19522252 Dương Hiển Thê
-//   */
-
-
-//   `;
 
 const configuration = {
   // Using From https://www.metered.ca/tools/openrelay/
@@ -121,6 +110,8 @@ function CodeScreen({ username }) {
   const [communicateBoxPosition, setCommunicateBoxPosition] = useState({ x: 0, y: 0 })
 
   const [expandVoiceTab, setExpandVoiceTab] = useState(true)
+  const [micState, setMicState] = useState(true)
+  const [camState, setCamState] = useState(true)
   const inputRef = useRef(null)
 
   const [userColors, setUserColors] = useState({})
@@ -131,6 +122,7 @@ function CodeScreen({ username }) {
   const tabIndexRef = useRef(0)
 
   const someOneChangeCode = useRef(false)
+  const location = useLocation()
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -359,18 +351,42 @@ function CodeScreen({ username }) {
   }, []);
 
   useEffect(() => {
-    initUserMedia()
+    const initialMicState = location.state?.micState ?? true
+    const initialCamState = location.state?.camState ?? true
+
+    initUserMedia(initialMicState, initialCamState)
   }, [])
 
   useEffect(() => {
     scrollMessageListToBottom()
   }, [messageList])
 
-  function initUserMedia() {
-    navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
+  useEffect(() => {
+    return () => {
+      if (localStream.current) {
+        localStream.current.getTracks().forEach(track => {
+          if (track.readyState === "live") {
+            track.stop();
+          }
+        })
+      }
+      userVideo.current = null
+      localStream.current = null
+    }
+  }, [])
 
+  function initUserMedia(initMicState, initCamState) {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
       userVideo.current.srcObject = stream
       localStream.current = stream
+
+      if (!initMicState) {
+        turnOnOffMicrophone()
+      }
+
+      if (!initCamState) {
+        turnOnOffCamera()
+      }
 
       var speechEvent = hark(localStream.current, {})
 
@@ -453,7 +469,6 @@ function CodeScreen({ username }) {
         })
         setPeers(newList)
       })
-
     })
   }
 
@@ -731,7 +746,8 @@ function CodeScreen({ username }) {
         'camState': false
       }))
 
-      return false
+      setCamState(false)
+
     } else {
       navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
         userVideo.current.srcObject = stream
@@ -756,8 +772,9 @@ function CodeScreen({ username }) {
           'roomId': roomId,
           'camState': true
         }))
+
+        setCamState(true)
       })
-      return true
     }
   }
 
@@ -765,14 +782,13 @@ function CodeScreen({ username }) {
     var track = localStream.current.getAudioTracks()
     if (track) {
       localStream.current.getAudioTracks()[0].enabled = !track[0].enabled
+      setMicState(localStream.current.getAudioTracks()[0].enabled)
       socket.current.emit('TOGGLE_MICROPHONE', {
         'userId': socket.current.id,
         'roomId': roomId,
         'micState': localStream.current.getAudioTracks()[0].enabled
       })
-      return localStream.current.getAudioTracks()[0].enabled
     }
-    return false
   }
 
   function _createDateFormat(dateTime) {
@@ -1052,6 +1068,8 @@ function CodeScreen({ username }) {
                 onCollapsed={(collapsed) => {
                   setExpandVoiceTab(!collapsed)
                 }}
+                camState={camState}
+                micState={micState}
                 onCamera={turnOnOffCamera}
                 onMic={turnOnOffMicrophone} />
               <Collapse in={expandVoiceTab}>

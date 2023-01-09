@@ -18,8 +18,8 @@ function MainAvatarBox({ id, isSpeaking, name, color, width, height, videoRef })
             <video
                 style={{ objectFit: 'cover', zIndex: 1, position: 'absolute', top: 0, left: 0 }}
                 id={id}
-                height={height}
-                width={width}
+                height={'100%'}
+                width={'100%'}
                 muted ref={videoRef} autoPlay playsInline
             />
             <PersonRounded
@@ -45,8 +45,8 @@ function MainAvatarBox({ id, isSpeaking, name, color, width, height, videoRef })
                 id={id}
                 sx={{
                     zIndex: 3,
-                    height: height,
-                    width: width,
+                    height: '100%',
+                    width: '100%',
                     borderRadius: 2,
                     outlineStyle: "solid",
                     outlineOffset: isSpeaking ? "-3px" : "-1.5px",
@@ -56,7 +56,7 @@ function MainAvatarBox({ id, isSpeaking, name, color, width, height, videoRef })
                     position: "absolute",
                     top: 0,
                     left: 0,
-            }}/>
+                }} />
         </Box>
     );
 }
