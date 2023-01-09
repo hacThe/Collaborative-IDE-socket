@@ -181,6 +181,16 @@ svg {
   margin: 2px !important;
 }
 
+button.Mui-disabled {
+  color: rgba(256,256, 256, 0.26) !important;
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.cancel-button {
+  color: rgba(256,256, 256, 0.26) !important;
+  border-radius: 4px !important;
+}
+
 ::-webkit-scrollbar {
   width: 20px;
 }
