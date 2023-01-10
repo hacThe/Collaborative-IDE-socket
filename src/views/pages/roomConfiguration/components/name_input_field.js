@@ -39,6 +39,7 @@ function NameInputField({ onPressHandler, error }) {
             textAlign: 'center',
           }}
           multiline={false}
+          autoComplete='off'
           autoFocus
           variant="standard"
           margin="normal"
