@@ -8,6 +8,7 @@ import Carousel from "nuka-carousel";
 import VideoChatRoundedIcon from '@mui/icons-material/VideoChatRounded';
 import logo from '../../../assets/collab-coding-2.png';
 import { ReactComponent as GithubLogo } from '../../../assets/github-logo.svg';
+import { KeyboardArrowLeftRounded, KeyboardArrowRightRounded } from "@mui/icons-material";
 
 
 function StartScreen() {
@@ -36,12 +37,20 @@ function StartScreen() {
         }} 
         item md={7}>
           <Carousel
-          style={{
-            width: "70vw",
-          }}
+            style={{
+              width: "56vw",
+            }}
             adaptiveHeight={true}
-            renderCenterLeftControls={null}
-            renderCenterRightControls={null}
+            renderCenterLeftControls={({ previousDisabled, previousSlide }) => (
+              <IconButton sx={{ left: "1%" }} onClick={previousSlide} disabled={previousDisabled}>
+                <KeyboardArrowLeftRounded />
+              </IconButton>
+            )}
+            renderCenterRightControls={({ nextDisabled, nextSlide }) => (
+              <IconButton sx={{ right: "1%" }} onClick={nextSlide} disabled={nextDisabled}>
+                <KeyboardArrowRightRounded />
+              </IconButton>
+            )}
             slidesToShow={1}
             scrollMode="reminder">
               <div style={{
@@ -55,7 +64,7 @@ function StartScreen() {
                   fontSize: "140px"
                 }}/>
                 <Box sx={{
-                  width: "50vw",
+                  width: "45vw",
                 }}>
                   This is an online code editor that allows you to write, compile and execute your code online in many programming languages...
                 </Box>
@@ -71,7 +80,7 @@ function StartScreen() {
                   fontSize: "140px"
                 }}/>
                 <Box sx={{
-                  width: "50vw",
+                  width: "45vw",
                 }}>
                   ...collaboratively with your teammates, and colleagues.
                 </Box>
@@ -87,7 +96,7 @@ function StartScreen() {
                   fontSize: "140px"
                 }}/>
                 <Box sx={{
-                  width: "50vw",
+                  width: "45vw",
                 }}>
                   When coding together, you and your teammates can also communicate with each other via messaging and video calling.
                 </Box>
@@ -126,11 +135,14 @@ function StartScreen() {
           paddingBottom: "36px",
         }}>
           <img src={logo} alt="logo" style={{
-            width: "20%",
-            paddingBottom: "20px",
+            width: "15%",
+            backgroundColor: "#222",
+            borderRadius: "50%",
+            padding: "16px",
+            marginBottom: "18px",
           }}/>
           <p style={{ width: "130px", textAlign: "center", lineHeight: "1.6" }}>
-            Welcome to <strong>Collab Coding</strong>
+            Welcome to <strong>Col-E</strong>
           </p>
           <Button
             sx={{
