@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
 import { Box } from "@mui/system";
@@ -60,7 +60,7 @@ const videoConstraint = {
 
 
 function CodeScreen({ username }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   var remoteCursorManager = null;
   var remoteSelectionManager = null;
@@ -277,7 +277,6 @@ function CodeScreen({ username }) {
     })
 
     socket.current.on('CHANGE_VERSION', (newVersionIndex) => {
-      console.log(newVersionIndex)
       setSelectedVersionIndex(newVersionIndex);
     })
 
@@ -961,7 +960,8 @@ function CodeScreen({ username }) {
             color="error"
             fullWidth={true}
             onClick={() => {
-              navigate(`/`)
+              socket.current.disconnect()
+              navigate(`/`, { replace: true })
             }}
           >
             Leave room
