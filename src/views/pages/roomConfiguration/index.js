@@ -25,6 +25,7 @@ function InputNameScreen() {
     const firstTime = useRef(true)
     const localStream = useRef(null)
     const dispatch = useDispatch()
+    const [error, setError] = useState("")
 
     useEffect(() => {
         if (firstTime.current) {
@@ -128,8 +129,7 @@ function InputNameScreen() {
             console.log(err)
         }).then((res) => {
             if (res.data.isUsernameExist) {
-                console.log('username is exist')
-                // handle case when username is exist
+                setError('This username has been taken, please use another username')
             } else {
                 navigate(`/room/${roomId}`, {
                     replace: true, state: {
@@ -149,12 +149,23 @@ function InputNameScreen() {
 
     return (
         <Grid sx={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            display: 'flex',
             height: '100vh',
             width: '100vw',
             background: "#151515",
-            padding: '50px'
+            padding: '56px 100px 56px 100px'
         }} container>
-            <Grid item xs={6}>
+            <Grid 
+                sx={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: "100%",
+                    height: "50%",
+                    display: 'flex',
+                }}
+                item md={6}>
                 <Box sx={{
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -163,11 +174,11 @@ function InputNameScreen() {
                     display: 'flex',
                     position: 'relative'
                 }}>
-                    <MainAvatarBox id={'userVideo'} name={''} color={'#808080'} height={'50%'} width={'80%'} isSpeaking={isSpeaking} videoRef={userVideoRef} />
+                    <MainAvatarBox id={'userVideo'} name={''} color={'#808080'} height={'120%'} width={'90%'} isSpeaking={isSpeaking} videoRef={userVideoRef} />
                     <Box sx={{
                         position: 'absolute',
                         width: '90%',
-                        height: '50%',
+                        height: '120%',
                         zIndex: 3,
                         display: 'flex',
                     }}>
@@ -196,7 +207,14 @@ function InputNameScreen() {
                     </Box>
                 </Box>
             </Grid>
-            <Grid item xs={6}>
+            <Grid sx={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '50%',
+                    width: '100%',
+                    display: 'flex'
+                }}
+                item md={6}>
                 <Box sx={{
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -204,7 +222,7 @@ function InputNameScreen() {
                     width: '100%',
                     display: 'flex'
                 }}>
-                    <NameInputField onPressHandler={onPressHandler} />
+                    <NameInputField onPressHandler={onPressHandler} error={error} />
                 </Box>
             </Grid>
         </Grid>

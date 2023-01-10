@@ -59,6 +59,26 @@ input {
   border-color: #333 !important;
 }
 
+div:has(> .input-name) {
+  border-bottom: 1px solid rgba(256, 256, 256, 0.42)
+}
+
+div:has(> .input-name):hover {
+  border-bottom: 2px solid rgba(256, 256, 256, 0.42)
+}
+
+div:has(> .input-name).Mui-focused {
+  border-bottom: 0px solid #1976d2
+}
+
+div:has(> .input-name).Mui-error {
+  border-bottom: 0px solid #d32f2f
+}
+
+div:has(> .input-name).Mui-error:hover {
+  border-bottom: 2px solid #d32f2f
+}
+
 .result-banner {
   height: 100%;
   border: 1px solid #333;
