@@ -54,9 +54,9 @@ function InputNameScreen() {
         }
 
         if (userVideoRef.current && userVideoRef.current.srcObject) {
-            var track = userVideoRef.current.srcObject.getAudioTracks()
-            userVideoRef.current.srcObject.getAudioTracks()[0].enabled = !track[0].enabled
-            localStream.current.getAudioTracks()[0].enabled = !track[0].enabled
+            var isTrackEnable = userVideoRef.current.srcObject.getAudioTracks()[0].enabled
+            userVideoRef.current.srcObject.getAudioTracks()[0].enabled = !isTrackEnable
+            localStream.current.getAudioTracks()[0].enabled = !isTrackEnable
         }
 
     }, [micState])
@@ -71,10 +71,12 @@ function InputNameScreen() {
 
                 speechEvent.on('speaking', () => {
                     setSpeakingState(true)
+
                 })
 
                 speechEvent.on('stopped_speaking', () => {
                     setSpeakingState(false)
+
                 })
             })
 
@@ -83,13 +85,7 @@ function InputNameScreen() {
 
     useEffect(() => {
         return () => {
-            if (localStream.current) {
-                localStream.current.getTracks().forEach(track => {
-                    if (track.readyState === "live") {
-                        track.stop();
-                    }
-                });
-            }
+            destroyMediaStream()
         }
     }, [])
 
@@ -99,6 +95,16 @@ function InputNameScreen() {
 
     function toggleMicrophone() {
         setMicState(!micState)
+    }
+
+    function destroyMediaStream() {
+        if (localStream.current) {
+            localStream.current.getTracks().forEach(track => {
+                if (track.readyState === "live") {
+                    track.stop();
+                }
+            });
+        }
     }
 
 
