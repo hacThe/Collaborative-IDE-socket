@@ -26,6 +26,7 @@ import hark from "hark"
 import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 import UserPalette from "./components/palette";
+import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
 
 const configuration = {
   // Using From https://www.metered.ca/tools/openrelay/
@@ -987,19 +988,43 @@ function CodeScreen({ username }) {
     return (
       <>
         <Box sx={{ marginTop: "4px" }}>
-          <MessageList
-            className='message-list'
-            lockable={false}
-            toBottomHeight={'100%'}
-            downButton={true}
-            notchStyle={{ display: 'none' }}
-            downButtonBadge={10}
-            sendMessagePreview={true}
-            messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '0px 8px 0px 10px', }}
-            dataSource={[
-              ...messageList
-            ]}
-          />
+          {
+            messageList.length === 0 ? 
+            <Box sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "auto",
+              height: "85vh",
+              width: "100%",
+              padding: "0px 36px 4px 36px",
+              textAlign: "center",
+              color: "#808080",
+              fontSize: "0.8rem"
+            }}>
+              <ForumRoundedIcon sx={{
+                paddingBottom: "16px",
+                fontSize: "4rem",
+                fill: "#808080 !important"
+              }}/>
+              This is room conversation, let's begin to chat with each other.
+            </Box>
+            :
+            <MessageList
+              className='message-list'
+              lockable={false}
+              toBottomHeight={'100%'}
+              downButton={true}
+              notchStyle={{ display: 'none' }}
+              downButtonBadge={10}
+              sendMessagePreview={true}
+              messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '0px 8px 0px 10px', }}
+              dataSource={[
+                ...messageList
+              ]}
+            />
+          }
           <Grid container spacing={1} sx={{ padding: "0px 8px 4px 10px" }}>
             <Grid item xs={10}>
               <Input
