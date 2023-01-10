@@ -3,20 +3,8 @@ import { IconButton } from "@mui/material";
 import { Box } from "@mui/system";
 import { useState } from "react";
 
-function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
-    const [cameraOn, setCameraOn] = useState(true);
-    const [micOn, setMicOn] = useState(true);
+function UserActionBar({ id, width, camState, micState, onCamera, onMic, onCollapsed }) {
     const [collapsed, setCollapsed] = useState(false);
-
-    function handleOnCamera() {
-        let newState = onCamera()
-        setCameraOn(newState)
-    }
-
-    function handleOnMic() {
-        let newState = onMic()
-        setMicOn(newState)
-    }
 
     function handleOnCollapsed() {
         const newState = !collapsed
@@ -54,18 +42,18 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
                     height: "24px",
                     width: "24px"
                 }}
-                onClick={handleOnCamera}
+                onClick={() => onCamera()}
             >
-                {!cameraOn ? <VideocamOffRounded fontSize="small" /> : <VideocamRounded fontSize="small" />}
+                {!camState ? <VideocamOffRounded fontSize="small" /> : <VideocamRounded fontSize="small" />}
             </IconButton>
             <IconButton
                 sx={{
                     height: "24px",
                     width: "24px"
                 }}
-                onClick={handleOnMic}
+                onClick={() => onMic()}
             >
-                {!micOn ? <MicOffRounded fontSize="small" /> : <MicRounded fontSize="small" />}
+                {!micState ? <MicOffRounded fontSize="small" /> : <MicRounded fontSize="small" />}
             </IconButton>
             <Box sx={{ width: "100%" }}>
                 <IconButton
@@ -74,7 +62,7 @@ function UserActionBar({ id, width, onCamera, onMic, onCollapsed }) {
                         width: "24px",
                         float: "right"
                     }}
-                    onClick={handleOnCollapsed}
+                    onClick={() => handleOnCollapsed()}
                 >
                     {collapsed ? <KeyboardArrowDownRounded fontSize="small" /> : <KeyboardArrowUpRounded fontSize="small" />}
                 </IconButton>

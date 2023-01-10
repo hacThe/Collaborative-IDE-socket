@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  username: null
+  username: null,
+  isAuth: false,
 }
 
 export const appSlice = createSlice({
@@ -11,10 +12,13 @@ export const appSlice = createSlice({
     setUserName: (state, action) => {
       state.username = action.payload
     },
+    setAuthState: (state, action) => {
+      state.isAuth = action.payload
+    }
   },
 })
 
 // Action creators are generated for each case reducer function
-export const {setUserName} = appSlice.actions
+export const { setUserName, setAuthState } = appSlice.actions
 
 export default appSlice.reducer

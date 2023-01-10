@@ -1,7 +1,7 @@
 import React from "react";
 const StartScreen = React.lazy(() => import("./views/pages/start"));
 const AuthGuard = React.lazy(() => import("./views/pages/room/authGuard.js"));
-const InputNameScreen = React.lazy(() => import("./views/pages/inputName"))
+const InputNameScreen = React.lazy(() => import("./views/pages/roomConfiguration"))
 
 
 const routes = [

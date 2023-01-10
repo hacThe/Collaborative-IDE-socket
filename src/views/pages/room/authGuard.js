@@ -7,10 +7,11 @@ const CodeScreen = React.lazy(() => import("."));
 
 function AuthGuard() {
   const username = useSelector((state) => state.app).username || sessionStorage.getItem('username');
+  const isAuth = useSelector((state) => state.app).isAuth
   const pathname = useLocation().pathname
   const roomId = pathname.substring(pathname.lastIndexOf('/') + 1)
 
-  return username ? <CodeScreen username={username} /> : <Navigate to="/inputName" replace state={{ 'isCreateRoom': false, 'roomId': roomId }} />;
+  return isAuth ? <CodeScreen username={username} /> : <Navigate to="/inputName" replace state={{ 'isCreateRoom': false, 'roomId': roomId }} />;
 }
 
 export default AuthGuard;
