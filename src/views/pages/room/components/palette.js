@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Circle from '@uiw/react-color-circle/esm/index';
 const USER_COLORS = [
-    "#808080",
     "#355ffa",
     "#0ac285",
     "#f85212",
@@ -20,7 +19,7 @@ function UserPalette({ userToColor, userId, onChange }) {
         return {
             color: color,
             title: color,
-            disabled: index === 0 || userToColor[userId]?.toLowerCase() === color?.toLowerCase() ? false : isColorDisabled(color, userToColor),
+            disabled: userToColor[userId]?.toLowerCase() === color?.toLowerCase() ? false : isColorDisabled(color, userToColor),
         }
     })
     return (
