@@ -156,6 +156,18 @@ function CodeScreen({ username }) {
     const resizeObserver = new ResizeObserver(() => {
       setCommunicateBoxWidth(communicateBoxRef.current.clientWidth)
       setCommunicateBoxHeight(communicateBoxRef.current.clientHeight)
+
+      const editorBounds = editorUIRef.current.getBoundingClientRect()
+      const lastPosition = communicateBoxPositionRef.current
+      const communicateBoxSize = communicateBoxRef.current
+      const newX = lastPosition.x + communicateBoxSize.clientWidth > editorBounds.right
+        ? editorBounds.right - communicateBoxSize.clientWidth - EDITOR_BOUND_PADDING : lastPosition.x
+      const newY = lastPosition.y + communicateBoxSize.clientHeight > editorBounds.bottom
+        ? editorBounds.bottom - communicateBoxSize.clientHeight - EDITOR_BOUND_PADDING : lastPosition.y;
+      setCommunicateBoxPosition({
+        x: newX,
+        y: newY
+      })
     });
 
     resizeObserver.observe(communicateBoxRef.current);
