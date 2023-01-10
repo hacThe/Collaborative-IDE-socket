@@ -123,6 +123,11 @@ function InputNameScreen() {
     }
 
     async function joinRoom(username) {
+        if (username === "") {
+            setError('Username can not be empty')
+            return
+        }
+
         const roomId = location.state.roomId
 
         // check duplicate name
