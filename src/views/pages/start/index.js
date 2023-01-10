@@ -135,10 +135,7 @@ function StartScreen() {
           paddingBottom: "36px",
         }}>
           <img src={logo} alt="logo" style={{
-            width: "15%",
-            backgroundColor: "#222",
-            borderRadius: "50%",
-            padding: "16px",
+            width: "20%",
             marginBottom: "18px",
           }}/>
           <p style={{ width: "130px", textAlign: "center", lineHeight: "1.6" }}>

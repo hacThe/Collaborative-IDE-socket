@@ -3,38 +3,60 @@ import {
   Button
 } from "@mui/material";
 import React, { useState } from "react";
+import { TextField, Typography } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { setUserName } from "../../../../redux/slices/app-slice";
 
-function NameInputField({ onPressHandler }) {
+function NameInputField({ onPressHandler, error }) {
   const [name, setName] = useState("");
   const dispatch = useDispatch();
   return (
     <Box
       sx={{
         background: "#151515",
-        width: "100%"
+        width: "100%",
+        padding: "0px 56px 0px 56px",
       }}
     >
       <h2 style={{
         display: 'flex',
         justifyContent: 'center',
+        textAlign: 'center'
       }}>Enter your name</h2>
-      <input
-        style={{
-          width: '50%',
+      <Box
+        sx={{
+          width: '100%',
           marginTop: '12px',
-          marginLeft: 'auto',
-          marginRight: 'auto'
         }}
-        value={name}
-        onChange={(e) => {
-          // username = e.target.value
-          setName(e.target.value)
-        }}
-        type="text"
-      />
-
+      >
+        <TextField
+          error={error !== ""}
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            textAlign: 'center',
+          }}
+          multiline={false}
+          autoFocus
+          variant="standard"
+          margin="normal"
+          onChange={(e) => {
+            setName(e.target.value)
+          }}
+          type="text"
+          inputProps={{
+            style: {
+              textAlign: "center",
+              fontSize: "1.75rem",
+            },
+            maxLength: 36,
+            className: "input-name",
+          }}
+        />
+      </Box>
+      <h4 style={{ color: "red", display: "flex", justifyContent: "center", alignItems: "center", marginTop: "4px" }}>{error}</h4>
       <Button
         sx={{
           display: "flex",

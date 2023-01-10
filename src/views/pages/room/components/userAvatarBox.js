@@ -65,6 +65,7 @@ const UserAvatarBox = ({ id, name, color, width, height, peer, stream, micState,
                 left: 8,
                 bottom: 8,
                 padding: "3px 3px 0px 6px",
+                marginRight: "8px",
             }}>
                 <Typography variant="caption" color="common.white">{name}</Typography>
                 <MicrophoneIcon micState={micState} />
