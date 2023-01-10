@@ -12,8 +12,13 @@ function SelectRoomDialog({ open, handleClose }) {
   const [error, setError] = useState("");
   const [roomId, setRoomId] = useState("");
   const navigate = useNavigate();
+
   return (
-    <Dialog PaperProps={{ style: { backgroundColor: "transparent" } }} open={open} onClose={handleClose}>
+    <Dialog PaperProps={{ style: { backgroundColor: "transparent" } }} open={open} onClose={() => {
+      handleClose()
+      setRoomId("")
+      setError("")
+    }}>
       <Box
         sx={{
           backgroundColor: "#151515",
@@ -33,7 +38,11 @@ function SelectRoomDialog({ open, handleClose }) {
           <Button className="cancel-button"
             sx={{ marginRight: "8px", fontFamily: "Roboto Mono" }}
             variant="text"
-            onClick={handleClose}
+            onClick={(() => {
+              handleClose()
+              setError("")
+              setRoomId("")
+            })}
           >
             Cancel
           </Button>
@@ -52,7 +61,6 @@ function SelectRoomDialog({ open, handleClose }) {
               })
                 .then((response) => {
                   const roomId = response.data["foundRoomIds"];
-                  console.log(roomId)
                   navigate(`inputName`, {
                     state: { 'isCreateRoom': false, 'roomId': roomId }
                   })
