@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider } from "@mui/material";
+import { Autocomplete, TextField, Button, Grid, Backdrop, CircularProgress, Collapse, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from "@mui/material";
 import { Box } from "@mui/system";
 import {
   RemoteCursorManager,
@@ -124,6 +124,9 @@ function CodeScreen({ username }) {
 
   const someOneChangeCode = useRef(false)
   const location = useLocation()
+
+  const [openTemplateDialog, setOpenTemplateDialog] = useState(false)
+  const newLanguageValueRef = useRef(null)
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -722,21 +725,30 @@ function CodeScreen({ username }) {
   }
 
 
-  function handleOnLanguageChange(event, value) {
-    const index = compilerLanguages.current.findIndex((item) => item.name === value);
-    setSelectedLanguageIndex(index);
-    code.current = compilerLanguages.current[index].template
-    setInitialCode(compilerLanguages.current[index].template)
-    if (index !== selectedLanguageIndex) {
-      setSelectedVersionIndex(0);
-      versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
-    }
-    changeEditorLanguage(compilerLanguages.current[index].languageCode);
+  function handleOnLanguageChange(changeTemplate) {
+    const value = newLanguageValueRef.current
 
-    socket.current?.emit('CHANGE_LANGUAGE', {
-      'roomId': roomId,
-      'newLanguage': value
-    })
+    if (value) {
+      const index = compilerLanguages.current.findIndex((item) => item.name === value);
+      setSelectedLanguageIndex(index);
+  
+      if (changeTemplate) {
+        code.current = compilerLanguages.current[index].template
+        setInitialCode(compilerLanguages.current[index].template)
+      }
+  
+      if (index !== selectedLanguageIndex) {
+        setSelectedVersionIndex(0);
+        versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
+      }
+      changeEditorLanguage(compilerLanguages.current[index].languageCode);
+  
+      socket.current?.emit('CHANGE_LANGUAGE', {
+        'roomId': roomId,
+        'newLanguage': value,
+        'changeTemplate': changeTemplate,
+      })
+    }
   }
 
   function handleOnLanguageVersionChange(event, value) {
@@ -876,7 +888,10 @@ function CodeScreen({ username }) {
               borderWidth: 10,
             },
           }}
-          onChange={handleOnLanguageChange}
+          onChange={(event, value) => {
+            newLanguageValueRef.current = value
+            setOpenTemplateDialog(true)
+          }}
           value={languageList[selectedLanguageIndex] ?? ""}
           renderInput={(params) => (
             <TextField {...params} label="Languages" />
@@ -1071,6 +1086,47 @@ function CodeScreen({ username }) {
   return (
     <>
       <Grid container>
+        <Dialog
+          PaperProps={{
+            className: "alert-dialog"
+          }}
+          open={openTemplateDialog}
+          onClose={() => {
+            setOpenTemplateDialog(false);
+          }}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Change the new language template?"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Do you want to keep or replace the old code with the new language template?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button sx={{
+              fontFamily: "Roboto Mono",
+              textTransform: "unset !important",
+              color: "#808080"
+            }} onClick={() => {
+              handleOnLanguageChange(false)
+              setOpenTemplateDialog(false)
+            }}>
+              Keep the old code
+            </Button>
+            <Button sx={{
+              fontFamily: "Roboto Mono",
+              textTransform: "unset !important",
+            }} onClick={() => {
+              handleOnLanguageChange(true)
+              setOpenTemplateDialog(false)
+            }} autoFocus>
+              Change to new template
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Backdrop
           sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
           open={compileState}

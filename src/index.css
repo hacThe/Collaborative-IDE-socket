@@ -125,6 +125,19 @@ svg {
   border-color: #ccc !important;
 }
 
+.alert-dialog {
+  background-color: #151515 !important;
+  padding: 4px 4px 8px 4px;
+}
+
+#alert-dialog-title {
+  color: #fff
+}
+
+#alert-dialog-description {
+  color: rgba(256, 256, 256, 0.6);
+}
+
 .message-list {
   overflow: auto;
   height: 85vh;
