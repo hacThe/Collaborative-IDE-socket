@@ -117,10 +117,6 @@ function InputNameScreen() {
     }
 
     async function joinRoom(username) {
-        if (username === "") {
-            setError('Username can not be empty')
-            return
-        }
 
         const roomId = location.state.roomId
 
@@ -147,6 +143,11 @@ function InputNameScreen() {
     }
 
     function onPressHandler(username) {
+        if (username === "") {
+            setError('Username can not be empty')
+            return
+        }
+
         sessionStorage.setItem('username', username)
         dispatch(setAuthState(true))
         location.state?.isCreateRoom ?? false ? createRoom() : joinRoom(username)

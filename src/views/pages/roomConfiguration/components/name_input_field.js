@@ -6,10 +6,13 @@ import React, { useState } from "react";
 import { TextField, Typography } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { setUserName } from "../../../../redux/slices/app-slice";
+import { useNavigate } from "react-router-dom";
 
 function NameInputField({ onPressHandler, error }) {
   const [name, setName] = useState("");
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -60,12 +63,14 @@ function NameInputField({ onPressHandler, error }) {
       <h4 style={{ color: "red", display: "flex", justifyContent: "center", alignItems: "center", marginTop: "4px" }}>{error}</h4>
       <Button
         sx={{
+          fontFamily: "Roboto Mono",
           display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           marginLeft: "auto",
           marginRight: "auto",
           marginTop: "25px",
-          width: '25%',
-          fontFamily: "Roboto Mono",
+          width: '30%',
         }}
         variant="contained"
         onClick={() => {
@@ -74,6 +79,26 @@ function NameInputField({ onPressHandler, error }) {
         }}
       >
         Save
+      </Button>
+      <Button
+        sx={{
+          fontFamily: "Roboto Mono",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginLeft: "auto",
+          marginRight: "auto",
+          marginTop: "14px",
+          width: '30%',
+        }}
+        variant="contained"
+        color="error"
+        fullWidth={true}
+        onClick={() => {
+          navigate(`/`, { replace: true })
+        }}
+      >
+        Leave room
       </Button>
     </Box>
   );
