@@ -14,6 +14,7 @@ import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded';
 import hark from "hark"
 import { useDispatch } from "react-redux";
 import { setAuthState } from "../../../redux/slices/app-slice";
+import ErrorDialog from "../../common_components/error_dialog";
 
 function InputNameScreen() {
     const navigate = useNavigate();
@@ -26,6 +27,8 @@ function InputNameScreen() {
     const localStream = useRef(null)
     const dispatch = useDispatch()
     const [error, setError] = useState("")
+    const [isShowDialog, setShowDialog] = useState(false)
+    const errorMessageRef = useRef(null)
 
     useEffect(() => {
         if (firstTime.current) {
@@ -45,6 +48,10 @@ function InputNameScreen() {
                 .then((stream) => {
                     userVideoRef.current.srcObject = stream
                     localStream.current = stream
+                })
+                .catch(err => {
+                    console.log(err)
+                    showErrorDialog('Can\'t start your webcam. Please reload your browser')
                 })
         }
     }, [camState])
@@ -72,13 +79,15 @@ function InputNameScreen() {
 
                 speechEvent.on('speaking', () => {
                     setSpeakingState(true)
-
                 })
 
                 speechEvent.on('stopped_speaking', () => {
                     setSpeakingState(false)
-
                 })
+            })
+            .catch(err => {
+                console.log(err)
+                showErrorDialog('Can\'t start your webcam. Please reload your browser')
             })
 
         firstTime.current = false
@@ -159,85 +168,98 @@ function InputNameScreen() {
         location.state?.isCreateRoom ?? false ? createRoom() : joinRoom(username)
     }
 
+    function showErrorDialog(message) {
+        setShowDialog(true)
+        errorMessageRef.current = message
+    }
+
     return (
-        <Grid sx={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            display: 'flex',
-            height: '100vh',
-            width: '100vw',
-            background: "#151515",
-            padding: '56px 100px 56px 100px'
-        }} container>
-            <Grid 
-                sx={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: "100%",
-                    height: "50%",
-                    display: 'flex',
-                }}
-                item md={6}>
-                <Box sx={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    width: '100%',
-                    display: 'flex',
-                    position: 'relative'
-                }}>
-                    <MainAvatarBox id={'userVideo'} name={''} color={'#808080'} height={'120%'} width={'90%'} isSpeaking={isSpeaking} videoRef={userVideoRef} />
-                    <Box sx={{
-                        position: 'absolute',
-                        width: '90%',
-                        height: '120%',
-                        zIndex: 3,
-                        display: 'flex',
-                    }}>
-                        <IconButton sx={{
-                            outline: '1px solid',
-                            outlineColor: micState ? 'white' : '#ea4335',
-                            margin: 'auto 8px 16px auto',
-                            backgroundColor: micState ? 'transparent' : '#ea4335',
-                            '&:hover': {
-                                backgroundColor: micState ? 'transparent' : '#ea4335',
-                            }
-                        }} onClick={() => { toggleMicrophone() }}>
-                            {micState ? <MicRoundedIcon /> : <MicOffRoundedIcon />}
-                        </IconButton>
-                        <IconButton sx={{
-                            outline: '1px solid',
-                            outlineColor: camState ? 'white' : '#ea4335',
-                            margin: 'auto auto 16px 8px',
-                            backgroundColor: camState ? 'transparent' : '#ea4335',
-                            '&:hover': {
-                                backgroundColor: camState ? 'transparent' : '#ea4335',
-                            }
-                        }} onClick={() => { toggleCamera() }}>
-                            {camState ? <VideocamRoundedIcon /> : <VideocamOffRoundedIcon sx={{ color: 'red' }} />}
-                        </IconButton>
-                    </Box>
-                </Box>
-            </Grid>
+        <>
+
             <Grid sx={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                display: 'flex',
+                height: '100vh',
+                width: '100vw',
+                background: "#151515",
+                padding: '56px 100px 56px 100px'
+            }} container>
+                <Grid
+                    sx={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: "100%",
+                        height: "50%",
+                        display: 'flex',
+                    }}
+                    item md={6}>
+                    <Box sx={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        width: '100%',
+                        display: 'flex',
+                        position: 'relative'
+                    }}>
+                        <MainAvatarBox id={'userVideo'} name={''} color={'#808080'} height={'120%'} width={'90%'} isSpeaking={isSpeaking} videoRef={userVideoRef} />
+                        <Box sx={{
+                            position: 'absolute',
+                            width: '90%',
+                            height: '120%',
+                            zIndex: 3,
+                            display: 'flex',
+                        }}>
+                            <IconButton sx={{
+                                outline: '1px solid',
+                                outlineColor: micState ? 'white' : '#ea4335',
+                                margin: 'auto 8px 16px auto',
+                                backgroundColor: micState ? 'transparent' : '#ea4335',
+                                '&:hover': {
+                                    backgroundColor: micState ? 'transparent' : '#ea4335',
+                                }
+                            }} onClick={() => { toggleMicrophone() }}>
+                                {micState ? <MicRoundedIcon /> : <MicOffRoundedIcon />}
+                            </IconButton>
+                            <IconButton sx={{
+                                outline: '1px solid',
+                                outlineColor: camState ? 'white' : '#ea4335',
+                                margin: 'auto auto 16px 8px',
+                                backgroundColor: camState ? 'transparent' : '#ea4335',
+                                '&:hover': {
+                                    backgroundColor: camState ? 'transparent' : '#ea4335',
+                                }
+                            }} onClick={() => { toggleCamera() }}>
+                                {camState ? <VideocamRoundedIcon /> : <VideocamOffRoundedIcon sx={{ color: 'red' }} />}
+                            </IconButton>
+                        </Box>
+                    </Box>
+                </Grid>
+                <Grid sx={{
                     alignItems: 'center',
                     justifyContent: 'center',
                     minHeight: '50%',
                     width: '100%',
                     display: 'flex'
                 }}
-                item md={6}>
-                <Box sx={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    width: '100%',
-                    display: 'flex'
-                }}>
-                    <NameInputField onPressHandler={onPressHandler} error={error} />
-                </Box>
+                    item md={6}>
+                    <Box sx={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        width: '100%',
+                        display: 'flex'
+                    }}>
+                        <NameInputField onPressHandler={onPressHandler} error={error} />
+                    </Box>
+                </Grid>
             </Grid>
-        </Grid>
+            <ErrorDialog open={isShowDialog}
+                handleClose={() => {
+                    setShowDialog(false)
+                    errorMessageRef.current = ''
+                }} errorMessage={errorMessageRef.current} />
+        </>
     )
 }
 

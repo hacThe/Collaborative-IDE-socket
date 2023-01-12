@@ -27,6 +27,7 @@ import scrollMessageListToBottom from "./utility";
 import { BASE_BACKEND_URL, GET_COMPILER_LANGUAGE_URL, RUN_COMPILER_URL, SAVE_CODE_URL } from "../../../constants";
 import UserPalette from "./components/palette";
 import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
+import ErrorDialog from "../../common_components/error_dialog";
 
 const configuration = {
   // Using From https://www.metered.ca/tools/openrelay/
@@ -127,6 +128,8 @@ function CodeScreen({ username }) {
 
   const [openTemplateDialog, setOpenTemplateDialog] = useState(false)
   const newLanguageValueRef = useRef(null)
+  const [isShowDialog, setShowDialog] = useState(false)
+  const errorMessageRef = useRef(null)
 
   useEffect(() => {
     if (!editorUIRef.current) return;
@@ -305,7 +308,6 @@ function CodeScreen({ username }) {
 
     socket.current.on('LOAD_ROOM_MESSAGES', roomMessages => {
       roomMessages = roomMessages.map((e, index) => {
-        // here
         const userId = usersRef.current.find(item => item.username === e.username).id
         const messageDateTime = e.date
         const messageEntity = {
@@ -337,6 +339,10 @@ function CodeScreen({ username }) {
       }
     })
 
+    socket.current.on('DB_ERROR', (message) => {
+      showErrorDialog(message)
+    })
+
 
     return () => {
       socket.current.off("CODE_INSERT");
@@ -362,6 +368,8 @@ function CodeScreen({ username }) {
       socket.current.off('SOMEONE_TOGGLE_CAMERA')
       socket.current.off('CHAT_MESSAGE')
       socket.current.off('LOAD_ROOM_MESSAGES')
+      socket.current.off('LISTEN_TO_SPEAKER')
+      socket.current.off('DB_ERROR')
     };
   }, []);
 
@@ -484,6 +492,9 @@ function CodeScreen({ username }) {
         })
         setPeers(newList)
       })
+    }).catch(err => {
+      console.log(err)
+      showErrorDialog('Can\'t start your webcam. Please reload your browser')
     })
   }
 
@@ -714,6 +725,7 @@ function CodeScreen({ username }) {
   }
 
   function changeEditorLanguage(rawLanguageCode) {
+    if (!rawLanguageCode) { return }
     const languageCode = rawLanguageCode === "nodejs" ? "javascript" : rawLanguageCode.replace(/[0-9]/g, '')
     setEditorLanguage(null)
     var oldModel = editorRef.current.getModel();
@@ -731,18 +743,18 @@ function CodeScreen({ username }) {
     if (value) {
       const index = compilerLanguages.current.findIndex((item) => item.name === value);
       setSelectedLanguageIndex(index);
-  
+
       if (changeTemplate) {
         code.current = compilerLanguages.current[index].template
         setInitialCode(compilerLanguages.current[index].template)
       }
-  
+
       if (index !== selectedLanguageIndex) {
         setSelectedVersionIndex(0);
         versionList.current = index !== -1 ? compilerLanguages.current[index].versions : []
       }
       changeEditorLanguage(compilerLanguages.current[index].languageCode);
-  
+
       socket.current?.emit('CHANGE_LANGUAGE', {
         'roomId': roomId,
         'newLanguage': value,
@@ -773,32 +785,36 @@ function CodeScreen({ username }) {
       setCamState(false)
 
     } else {
-      navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }).then(stream => {
-        userVideo.current.srcObject = stream
+      navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true })
+        .then(stream => {
+          userVideo.current.srcObject = stream
 
-        if (localStream.current.getAudioTracks()[0].enabled === false) {
-          stream.getAudioTracks()[0].enabled = false
-        }
+          if (localStream.current.getAudioTracks()[0].enabled === false) {
+            stream.getAudioTracks()[0].enabled = false
+          }
 
-        localStream.current = stream
-        peersRef.current.forEach((peerInfo, index) => {
-          let currentStream = peerInfo.peer.streams[0]
-          let oldVideoTrack = currentStream.getVideoTracks()[0]
-          let oldAudioTrack = currentStream.getAudioTracks()[0]
-          let newVideoTrack = stream.getVideoTracks()[0]
-          let newAudioTrack = stream.getAudioTracks()[0]
-          peerInfo.peer.replaceTrack(oldVideoTrack, newVideoTrack, currentStream)
-          peerInfo.peer.replaceTrack(oldAudioTrack, newAudioTrack, currentStream)
+          localStream.current = stream
+          peersRef.current.forEach((peerInfo, index) => {
+            let currentStream = peerInfo.peer.streams[0]
+            let oldVideoTrack = currentStream.getVideoTracks()[0]
+            let oldAudioTrack = currentStream.getAudioTracks()[0]
+            let newVideoTrack = stream.getVideoTracks()[0]
+            let newAudioTrack = stream.getAudioTracks()[0]
+            peerInfo.peer.replaceTrack(oldVideoTrack, newVideoTrack, currentStream)
+            peerInfo.peer.replaceTrack(oldAudioTrack, newAudioTrack, currentStream)
+          })
+
+          socket.current.emit('TOGGLE_CAMERA', ({
+            'userId': socket.current.id,
+            'roomId': roomId,
+            'camState': true
+          }))
+
+          setCamState(true)
+        }).catch(err => {
+          console.log(err)
+          showErrorDialog('Can\'t start your webcam. Please reload your browser')
         })
-
-        socket.current.emit('TOGGLE_CAMERA', ({
-          'userId': socket.current.id,
-          'roomId': roomId,
-          'camState': true
-        }))
-
-        setCamState(true)
-      })
     }
   }
 
@@ -1004,41 +1020,41 @@ function CodeScreen({ username }) {
       <>
         <Box sx={{ marginTop: "4px" }}>
           {
-            messageList.length === 0 ? 
-            <Box sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "auto",
-              height: "85vh",
-              width: "100%",
-              padding: "0px 36px 4px 36px",
-              textAlign: "center",
-              color: "#808080",
-              fontSize: "0.8rem"
-            }}>
-              <ForumRoundedIcon sx={{
-                paddingBottom: "16px",
-                fontSize: "4rem",
-                fill: "#808080 !important"
-              }}/>
-              This is room conversation, let's begin to chat with each other.
-            </Box>
-            :
-            <MessageList
-              className='message-list'
-              lockable={false}
-              toBottomHeight={'100%'}
-              downButton={true}
-              notchStyle={{ display: 'none' }}
-              downButtonBadge={10}
-              sendMessagePreview={true}
-              messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '0px 8px 0px 10px', }}
-              dataSource={[
-                ...messageList
-              ]}
-            />
+            messageList.length === 0 ?
+              <Box sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "auto",
+                height: "85vh",
+                width: "100%",
+                padding: "0px 36px 4px 36px",
+                textAlign: "center",
+                color: "#808080",
+                fontSize: "0.8rem"
+              }}>
+                <ForumRoundedIcon sx={{
+                  paddingBottom: "16px",
+                  fontSize: "4rem",
+                  fill: "#808080 !important"
+                }} />
+                This is room conversation, let's begin to chat with each other.
+              </Box>
+              :
+              <MessageList
+                className='message-list'
+                lockable={false}
+                toBottomHeight={'100%'}
+                downButton={true}
+                notchStyle={{ display: 'none' }}
+                downButtonBadge={10}
+                sendMessagePreview={true}
+                messageBoxStyles={{ maxWidth: '80%', boxShadow: 'none', borderRadius: '8px', margin: '0px 8px 0px 10px', }}
+                dataSource={[
+                  ...messageList
+                ]}
+              />
           }
           <Grid container spacing={1} sx={{ padding: "0px 8px 4px 10px" }}>
             <Grid item xs={10}>
@@ -1081,6 +1097,11 @@ function CodeScreen({ username }) {
       x: EDITOR_BOUND_PADDING,
       y: (editorUIRef.current.getBoundingClientRect().bottom - communicateBoxRef.current.clientHeight - EDITOR_BOUND_PADDING) ?? EDITOR_BOUND_PADDING
     })
+  }
+
+  function showErrorDialog(message) {
+    setShowDialog(true)
+    errorMessageRef.current = message
   }
 
   return (
@@ -1259,6 +1280,13 @@ function CodeScreen({ username }) {
           </Box>
         </Grid>
       </Grid>
+      <ErrorDialog open={isShowDialog}
+        handleClose={
+          () => {
+            setShowDialog(false)
+            errorMessageRef.current = ''
+          }
+        } errorMessage={errorMessageRef.current} />
     </>
   );
 }
