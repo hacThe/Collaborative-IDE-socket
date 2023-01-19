@@ -629,7 +629,9 @@ function CodeScreen({ username }) {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    changeEditorLanguage(compilerLanguages.current[selectedLanguageIndex].languageCode);
+    if (compilerLanguages.current) {
+      changeEditorLanguage(compilerLanguages.current[selectedLanguageIndex].languageCode);
+    }
 
     remoteCursorManager = new RemoteCursorManager({
       editor: editor,
