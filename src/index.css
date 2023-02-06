@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
 *,
 html {
   padding: 0;
@@ -58,10 +59,186 @@ input {
   border-color: #333 !important;
 }
 
+div:has(> .input-name) {
+  border-bottom: 1px solid rgba(256, 256, 256, 0.42)
+}
+
+div:has(> .input-name):hover {
+  border-bottom: 2px solid rgba(256, 256, 256, 0.42)
+}
+
+div:has(> .input-name).Mui-focused {
+  border-bottom: 0px solid #1976d2
+}
+
+div:has(> .input-name).Mui-error {
+  border-bottom: 0px solid #d32f2f
+}
+
+div:has(> .input-name).Mui-error:hover {
+  border-bottom: 2px solid #d32f2f
+}
+
 .result-banner {
   height: 100%;
   border: 1px solid #333;
   color: #666;
   padding: 12px;
   font-family: monospace;
+  word-wrap: break-word;
+  white-space: -moz-pre-wrap;
+  white-space: pre-wrap;
+}
+
+.active-result-banner {
+  height: 100%;
+  border: 1px solid #333;
+  color: white;
+  padding: 12px;
+  font-family: monospace;
+  word-wrap: break-word;
+  white-space: -moz-pre-wrap;
+  white-space: pre-wrap;
+}
+
+#compiler-language-version,
+#compiler-language {
+  font-family: 'Roboto Mono' !important;
+}
+
+#compiler-language-version-label,
+#compiler-language-label {
+  color: #ccc;
+  font-family: 'Roboto Mono' !important;
+}
+
+.MuiAutocomplete-input {
+  color: white !important;
+}
+
+svg {
+  fill: #ccc !important;
+}
+
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: #ccc !important;
+}
+
+.alert-dialog {
+  background-color: #151515 !important;
+  padding: 4px 4px 8px 4px;
+}
+
+#alert-dialog-title {
+  color: #fff
+}
+
+#alert-dialog-description {
+  color: rgba(256, 256, 256, 0.6);
+}
+
+.message-list {
+  overflow: auto;
+  height: 85vh;
+  width: 100%;
+  padding-bottom: 4px;
+}
+
+.rce-input {
+  border: none;
+  box-sizing: border-box;
+  color: #333 !important;
+  flex: 1 1;
+  font-size: 14px;
+  height: 40px;
+  outline: none;
+  padding: 0 12px !important;
+}
+
+.rce-container-input {
+  align-items: center;
+  background: #fff;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  min-width: 100%;
+  border-radius: 5px;
+}
+
+.rce-mbox-text:after {
+  content: "" !important;
+}
+
+.rce-mbox {
+  min-width: unset !important;
+  background: #302c2c !important;
+  color: white;
+}
+
+.rce-mbox.rce-mbox-right {
+  background: #1976d2 !important;
+  color: white;
+}
+
+.rce-container-mbox {
+  margin: 8px 0px;
+}
+
+.rce-mbox-title {
+  margin-bottom: 2px !important;
+}
+
+.rce-mbox-time {
+  color: #ffffff73 !important;
+  padding-left: 24px;
+  padding-top: 2px;
+  font-size: 8.5px !important;
+  font-weight: 300;
+}
+
+.rce-mbox-time.has-title {
+  padding-left: 8px !important;
+}
+
+.slider-frame {
+  overflow: visible !important;
+  height: unset !important;
+}
+
+.slider-control-bottomcenter > ul {
+  top: 32px !important;
+}
+
+.slider-control-bottomcenter > ul > li {
+  margin: 2px !important;
+}
+
+button.Mui-disabled {
+  color: rgba(256,256, 256, 0.26) !important;
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.cancel-button {
+  color: rgba(256,256, 256, 0.26) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar {
+  width: 20px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d6dee1;
+  border-radius: 20px;
+  border: 6px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a8bbbf;
 }
